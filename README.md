@@ -28,14 +28,18 @@ distributions. It is not affiliated with or endorsed by the AlphaNIST authors.
 With 8,192 parallel environments, the policy reaches 98.4 % evaluation success after 10K PPO iterations
 (98.7 % after 12.5K), at most half of the 25K iterations reported for AlphaNIST.
 
-<p align="center"><img src="results/success_vs_iteration.png" width="75%"/></p>
+<p align="center"><img src="results/success_vs_iteration.png" width="100%"/></p>
 
-| Setting | Overall | Loose | Pickup | Transport | Partial | Near-mating |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| AssembleNIST, 5K iter | 94.8 % | 91.6 | 93.9 | 95.1 | 97.8 | 95.7 |
-| AssembleNIST, 10K iter (default) | **98.4 %** | 96.9 | 98.4 | 99.4 | 98.7 | 98.7 |
-| AssembleNIST, 12.5K iter | **98.7 %** | 98.1 | 98.8 | 98.8 | 99.0 | 98.7 |
-| *AlphaNIST paper (Isaac Lab), 25K iter* | *86.9 %* | – | – | – | – | – |
+Evaluation success rate (%) with 8,192 environments, by start state:
+
+| Start state | AssembleNIST<br/>5K iter | AssembleNIST<br/>10K iter (default) | AssembleNIST<br/>12.5K iter | AlphaNIST paper<br/>25K iter |
+| --- | :---: | :---: | :---: | :---: |
+| Loose | 91.6 | 96.9 | 98.1 | – |
+| Pickup | 93.9 | 98.4 | 98.8 | – |
+| Transport | 95.1 | 99.4 | 98.8 | – |
+| Partial | 97.8 | 98.7 | 99.0 | – |
+| Near-mating | 95.7 | 98.7 | 98.7 | – |
+| **Overall** | **94.8** | **98.4** | **98.7** | **86.9** |
 
 Evaluation follows the AlphaNIST protocol: a frozen start-state bank, 5 seeds × 32 trials per task,
 and sampled policy actions. Success requires assembly within 15 seconds without a safety violation.
@@ -134,7 +138,37 @@ The board assets come from [UW Lab](https://github.com/UW-Lab/UWLab) and the rob
 [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
 
 See [`THIRD_PARTY.md`](THIRD_PARTY.md) for third-party code, assets, and licenses.
-If you use AssembleNIST, please cite the works listed in [`CITATION.bib`](CITATION.bib).
+
+## Citation
+
+If you use AssembleNIST, please cite this repository together with AlphaNIST and SGS
+(all entries are also in [`CITATION.bib`](CITATION.bib)):
+
+```bibtex
+@misc{sun2026assemblenist,
+  title        = {AssembleNIST: One Policy for All NIST Board Assemblies in MuJoCo},
+  author       = {Sun, Tao},
+  year         = {2026},
+  howpublished = {\url{https://github.com/suniique/assembly-nist}}
+}
+
+@article{zhang2026alphanist,
+  title   = {AlphaNIST: Emergent Assembly Skills from Binary Task Rewards},
+  author  = {Zhang, Octi and Akinola, Iretiayo and Scalise, Rosario and Guaman Castro, Mateo and Yin, Patrick and
+             Widmer, Tobias and Macklin, Miles and Amevor, Chris and Turpin, Dylan and Van Gelder, Dirk and
+             Carius, Jan and Handa, Ankur and State, Gavriel and Guo, Yunrong and Narang, Yashraj},
+  journal = {arXiv preprint arXiv:2610.13354},
+  year    = {2026}
+}
+
+@article{zhang2026sgs,
+  title   = {A Balanced Data Diet: Addressing the Exploration Bottleneck in Mega-Scale RL for Robot Control},
+  author  = {Zhang, Octi and Guaman Castro, Mateo and Yin, Patrick and Dagnino, Ignacio and Gupta, Abhishek and
+             Scalise, Rosario and Boots, Byron},
+  journal = {arXiv preprint arXiv:2610.12465},
+  year    = {2026}
+}
+```
 
 ## License
 
