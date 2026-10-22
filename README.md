@@ -1,4 +1,4 @@
-# Assemble NIST in MuJoCo
+# NIST Assembly Policy Learning in MuJoCo
 
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.x-1f6feb) ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
 
