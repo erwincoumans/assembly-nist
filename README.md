@@ -24,11 +24,11 @@ distributions. I am not affiliated with or endorsed by the AlphaNIST authors.
 
 With 8,192 parallel environments, the policy reaches **98.4%** evaluation success after 10K PPO iterations, outperforming the AlphaNIST’s performance with less than half of the 25K iterations reported.
 
-<p align="center"><img src="results/success_vs_iteration.png" width="100%"/></p>
-
 **Success rate (%) by training iterations.**
 
-At 10k iterations every task reaches at least 95%. The full learning curve can be found in
+<p align="center"><img src="results/success_vs_iteration.png" width="100%"/></p>
+
+The full learning curve can be found in
 [`results/reference_e8192.csv`](results/reference_e8192.csv).
 
 <table>
@@ -139,17 +139,29 @@ The learner and workers must share the run directory. For clusters without Slurm
 
 </details>
 
-## Method details
+## What failed first and turned out to matter most?
+
+My first long runs on 8k environments stalled out at a 46% success rate after 23k iterations. Getting the policy to learn efficiently
+took several non-obvious changes; these are the lessons that mattered most. The final run changed several of
+them at once, so their individual contributions were not isolated.
+
+1. **Keeping RL exploring helps in this task.** With entropy 0.001, an initial std of 0.5 and a std floor of 0.1, the SR crept up about 1 point per
+   1000 iterations. A learned std starting at 1.0 with no floor and entropy 0.005 reached 49% after 2000 iterations
+   and 98% after 5500.
+2. **Make the wrist fast enough to finish in 15s.** Under the `libfranka` gains, a relative target $$q + s \cdot a$$ never fully catches up. With a uniform 0.02 rad scale, the wrist took 15–27s just to rotate 90°. Tuning per-joint scales to give every joint ~0.5 rad/s per unit action finally made reorientation possible.
+3. **Fix the physics before tuning RL.** Nut-threading sat at 0% SR because its sharp thread tips were getting stuck in MuJoCo's SDF contact. Adding 0.2 mm of radial clearance let the nuts spin freely without skipping threads. I also had to tune the timestep: gear teeth and threads needed 0.5 ms steps with stiff contacts.
+
+**Final design**
 
 - **Policy:** a SimBa-style actor and critic trained with PPO, using part, fixture, and gripper point clouds
   plus proprioception history.
-- **Control:** relative joint-position targets and a binary gripper at 25 Hz with libfranka impedance gains.
-  Per-joint action scales account for the joints' different responses; an action-rate penalty encourages smooth motion.
+- **Control:** relative joint-position targets and a binary gripper at 25 Hz with libfranka impedance gains,
+  per-joint action scales, and an action-rate penalty.
 - **Reward:** binary assembly success at 1 mm keypoint tolerance, with small control penalties.
   Episodes end on success, a joint-speed violation, or the 15-second limit.
 - **Start states:** loose, pickup, transport, partial, and near-mating poses, sampled with SGS.
 - **Contacts:** primitive geometry for rods and pegs, convex gear teeth, helical-thread SDFs for nuts and bolts,
-  and mesh SDFs for connectors. Gears and nuts use 0.5 ms simulation steps; other parts use 2.5 ms.
+  and mesh SDFs for connectors. Gears and nuts use 0.5 ms simulation steps and other parts use 2.5 ms.
 
 ## Acknowledgements
 
@@ -159,7 +171,7 @@ This project builds on
 - *A Balanced Data Diet: Addressing the Exploration Bottleneck in Mega-Scale RL for Robot Control*
 (Zhang et al., 2026).
 
-Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful discussions with training details!
+Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful guidance with training details and [Jing Zhang](https://jingz6676.github.io/) for helpful discussions!
 The NIST board assets come from [UW Lab](https://github.com/UW-Lab/UWLab) and the robot model from
 [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
 
