@@ -24,11 +24,11 @@ distributions. I am not affiliated with or endorsed by the AlphaNIST authors.
 
 With 8,192 parallel environments, the policy reaches **98.4%** evaluation success after 10K PPO iterations, outperforming the AlphaNIST’s performance with less than half of the 25K iterations reported.
 
-<p align="center"><img src="results/success_vs_iteration.png" width="100%"/></p>
-
 **Success rate (%) by training iterations.**
 
-At 10k iterations every task reaches at least 95%. The full learning curve can be found in
+<p align="center"><img src="results/success_vs_iteration.png" width="100%"/></p>
+
+The full learning curve can be found in
 [`results/reference_e8192.csv`](results/reference_e8192.csv).
 
 <table>
