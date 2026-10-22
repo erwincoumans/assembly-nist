@@ -139,7 +139,9 @@ The learner and workers must share the run directory. For clusters without Slurm
 
 </details>
 
-## Method details
+## What failed first and turned out to matter most?
+
+Getting policy learning to converge efficiently required several non-obvious design choices. I feel that the details below were essential to matching the original paper's performance:
 
 - **Policy:** a SimBa-style actor and critic trained with PPO, using part, fixture, and gripper point clouds
   plus proprioception history.
@@ -149,7 +151,7 @@ The learner and workers must share the run directory. For clusters without Slurm
   Episodes end on success, a joint-speed violation, or the 15-second limit.
 - **Start states:** loose, pickup, transport, partial, and near-mating poses, sampled with SGS.
 - **Contacts:** primitive geometry for rods and pegs, convex gear teeth, helical-thread SDFs for nuts and bolts,
-  and mesh SDFs for connectors. Gears and nuts use 0.5 ms simulation steps; other parts use 2.5 ms.
+  and mesh SDFs for connectors. Gears and nuts use 0.5 ms simulation steps and other parts use 2.5 ms.
 
 ## Acknowledgements
 
