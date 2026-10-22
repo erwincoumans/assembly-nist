@@ -34,10 +34,12 @@ Evaluation success rate (%) with 8,192 environments, by start state:
 | Near-mating | 95.7 | 98.7 | 98.7 | – |
 | **Overall** | **94.8** | **98.4** | **98.7** | **86.9** |
 
-Evaluation follows the AlphaNIST protocol: a frozen start-state bank, 5 seeds × 32 trials per task,
+Evaluation follows the AlphaNIST protocol: 5 seeds × 32 trials per task,
 and sampled policy actions. Success requires assembly within 15 seconds without a safety violation.
-The AlphaNIST result uses a different simulator, asset set, and implementation, so it is not a direct comparison.
-At 10K iterations every task reaches at least 95 %. The full learning curve is in
+
+Please note that the AlphaNIST result uses a different simulator, asset set, and implementation, so it is not a direct comparison.
+
+At 10K iterations every task reaches at least 95 %. The full learning curve can be found in
 [`results/reference_e8192.csv`](results/reference_e8192.csv).
 
 <table>
