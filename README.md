@@ -25,7 +25,7 @@ With 8,192 parallel environments, the policy reaches 98.4 % evaluation success a
 
 Evaluation success rate (%) with 8,192 environments, by start state:
 
-| Start state | AssembleNIST<br/>5K iter | AssembleNIST<br/>10K iter (default) | AssembleNIST<br/>12.5K iter | AlphaNIST paper<br/>25K iter |
+| Start state | AssembleNIST<br/>5K iter | AssembleNIST<br/>10K iter | AssembleNIST<br/>12.5K iter | AlphaNIST paper<br/>25K iter |
 | --- | :---: | :---: | :---: | :---: |
 | Loose | 91.6 | 96.9 | 98.1 | – |
 | Pickup | 93.9 | 98.4 | 98.8 | – |
