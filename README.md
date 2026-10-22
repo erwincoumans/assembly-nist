@@ -1,27 +1,20 @@
-<div align="center">
-
 # AssembleNIST
 
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.x-1f6feb) ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
 
-[Tao Sun](https://taosun.io) · Stanford University
+[Tao Sun](https://taosun.io) | Stanford University
 
-**A single reinforcement-learning policy for all 20 assemblies of the NIST Assembly Task Board,
-learned from binary rewards with a Franka arm in MuJoCo.**
+<img src="docs/teaser.gif" width="100%"/>
 
-<img src="docs/teaser.gif" width="90%"/>
-
-*The pretrained policy assembles all 20 parts one at a time using mean actions.
-Assembly is shown at half speed; moves between parts at double speed.*
-
-</div>
+*A single reinforcement-learning policy for all 20 assemblies of the NIST Assembly Task Board,
+learned from binary rewards with a Franka arm in MuJoCo.*
 
 ## Disclaimer
 
 This repository is an **independent implementation** of the approach introduced by
 [AlphaNIST](https://alpha-nist.github.io/) and [Success Guided Sampling (SGS)](https://sgs-rl.github.io/).
-It is built in MuJoCo and makes its own design choices for contact modeling, the action space and the start-state
-distributions. It is not affiliated with or endorsed by the AlphaNIST authors.
+It is built in MuJoCo environment. Since the AlphaNIST hasn’t yet released its source code, I made own design choices for contact modeling, the action space and the start-state
+distributions. I am not affiliated with or endorsed by the AlphaNIST authors.
 
 ## Results
 
