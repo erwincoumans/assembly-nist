@@ -1,0 +1,7 @@
+part_type,tasks,success_5k,success_10k,success_12k5
+rods,R4+R8+R12+R16,96.6,98.6,98.6
+pegs,P4+P8+P12+P16,96.6,98.1,98.6
+gears,Gs+Gm+Gl,98.1,98.3,99.0
+nuts,N4+N8+N12+N16,87.2,98.0,97.5
+connectors,BNC+DSUB+RJ45+USB+WP,96.1,99.0,99.6
+overall,all 20,94.8,98.4,98.7

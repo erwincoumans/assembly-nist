@@ -18,7 +18,7 @@ distributions. I am not affiliated with or endorsed by the AlphaNIST authors.
 
 ## Results
 
-With 8,192 parallel environments, the policy reaches **98.4%** evaluation success after 10K PPO iterations, outperforming the AlphaNIST’s performance with more than half of the 25K iterations reported.
+With 8,192 parallel environments, the policy reaches **98.4%** evaluation success after 10K PPO iterations, outperforming the AlphaNIST’s performance with less than half of the 25K iterations reported.
 
 <p align="center"><img src="results/success_vs_iteration.png" width="100%"/></p>
 
@@ -32,6 +32,17 @@ Evaluation success rate (%) with 8,192 environments, by start state:
 | Partial | 97.8 | 98.7 | 99.0 | – |
 | Near-mating | 95.7 | 98.7 | 98.7 | – |
 | **Overall** | **94.8** | **98.4** | **98.7** | **86.9** |
+
+Evaluation success rate (%) by part type (mean over the tasks of each type):
+
+| Part type | AssembleNIST<br/>5K iter | AssembleNIST<br/>10K iter | AssembleNIST<br/>12.5K iter |
+| --- | :---: | :---: | :---: |
+| Rods (4, 8, 12, 16 mm) | 96.6 | 98.6 | 98.6 |
+| Pegs (4, 8, 12, 16 mm) | 96.6 | 98.1 | 98.6 |
+| Gears (small, medium, large) | 98.1 | 98.3 | 99.0 |
+| Nuts (M4, M8, M12, M16) | 87.2 | 98.0 | 97.5 |
+| Connectors (BNC, D-sub, RJ45, USB, waterproof) | 96.1 | 99.0 | 99.6 |
+| **Overall** | **94.8** | **98.4** | **98.7** |
 
 Evaluation follows the AlphaNIST protocol: 5 seeds × 32 trials per task,
 and sampled policy actions. Success requires assembly within 15 seconds without a safety violation.
@@ -47,6 +58,16 @@ At 10K iterations every task reaches at least 95 %. The full learning curve can 
 <td align="center"><img src="docs/board_done.png" width="100%"/><br/><sub>after sequential assembly</sub></td>
 </tr>
 </table>
+
+### More visual results
+
+Full sequential-assembly runs (all 20 parts, mean actions; policy at half speed, moves between parts at double speed):
+
+| Video | Policy | Assembly order | Result |
+| --- | --- | --- | --- |
+| [`demo_it12500_seed3.mp4`](docs/videos/demo_it12500_seed3.mp4) | 12.5K iter | M16 nut 2nd, D-sub 3rd, rest random | 20 / 20 |
+| [`demo_it12650_seed1.mp4`](docs/videos/demo_it12650_seed1.mp4) | 12.65K iter (end of the reference run) | random | 20 / 20 |
+| [`demo_it12650_seed4.mp4`](docs/videos/demo_it12650_seed4.mp4) | 12.65K iter (end of the reference run) | M16 nut 2nd, USB 3rd, rest random | 20 / 20 |
 
 ## Quick start
 

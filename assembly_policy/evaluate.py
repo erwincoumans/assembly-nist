@@ -73,7 +73,7 @@ def evaluate(policy, tasks, bank_dir, cfg, seeds=(0, 1, 2, 3, 4), trials=32):
     for k, t in enumerate(tasks):
         m = E[:, 1] == k
         ps = [success[m & (E[:, 0] == s)].mean() for s in seeds]
-        res["per_task"][t] = dict(mean=float(np.mean(ps)), std=float(np.std(ps)), n=int(m.sum()),
+        res["per_task"][t] = dict(mean=float(np.mean(ps)), std=float(np.std(ps)), per_seed=[float(x) for x in ps], n=int(m.sum()),
                                   by_family={f: float(success[m & (fam == i)].mean()) if (m & (fam == i)).any() else None
                                              for i, f in enumerate(FAMILIES)})
     for i, f in enumerate(FAMILIES):
