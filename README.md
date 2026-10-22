@@ -2,9 +2,11 @@
 
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.x-1f6feb) ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
 
-[Tao Sun](https://taosun.io) | Stanford University
+**[Tao Sun](https://taosun.io) | Stanford University**
 
-<img src="docs/teaser.gif" width="100%"/>
+<!-- <img src="docs/teaser.gif" width="100%"/> -->
+https://github.com/user-attachments/assets/81129b64-3911-485c-b9f9-cc1282c2d831
+
 
 *A single reinforcement-learning policy for all 20 assemblies of the NIST Assembly Task Board,
 learned from binary rewards with a Franka arm in MuJoCo.*
@@ -13,16 +15,30 @@ learned from binary rewards with a Franka arm in MuJoCo.*
 
 This repository is an **independent implementation** of the approach introduced by
 [AlphaNIST](https://alpha-nist.github.io/) and [Success Guided Sampling (SGS)](https://sgs-rl.github.io/).
-It is built in MuJoCo environment. Since the AlphaNIST hasn’t yet released its source code, I made own design choices for contact modeling, the action space and the start-state
+It is built in MuJoCo environment. 
+
+Since the AlphaNIST hasn’t yet released its source code (as of Oct 21, 2026), I made own design choices for contact modeling, the action space and the start-state
 distributions. I am not affiliated with or endorsed by the AlphaNIST authors.
 
-## Results
+## Evaluation results
 
 With 8,192 parallel environments, the policy reaches **98.4%** evaluation success after 10K PPO iterations, outperforming the AlphaNIST’s performance with more than half of the 25K iterations reported.
 
 <p align="center"><img src="results/success_vs_iteration.png" width="100%"/></p>
 
-**Evaluation success rate (%) by part type**
+**Success rate (%) by training iterations.**
+
+At 10k iterations every task reaches at least 95%. The full learning curve can be found in
+[`results/reference_e8192.csv`](results/reference_e8192.csv).
+
+<table>
+<tr>
+<td align="center"><img src="docs/board_start.png" width="100%"/><br/>20 parts at random initial poses</td>
+<td align="center"><img src="docs/board_done.png" width="100%"/><br/>After assembly</td>
+</tr>
+</table>
+
+**Success rate (%) by part type.**
 
 | Part type | Ours<br/>5k iter | Ours<br/>10k iter | Ours<br/>12.5k iter | Original AlphaNIST<br/>25k iter |
 | --- | :---: | :---: | :---: | :---: |
@@ -33,7 +49,7 @@ With 8,192 parallel environments, the policy reaches **98.4%** evaluation succes
 | Connectors | 96.1 | 99.0 | 99.6 | – |
 | **Overall** | 94.8 | 98.4 | **98.7** | 86.9 |
 
-**Evaluation success rate (%) by starting state**
+**Success rate (%) by starting state.**
 
 | Starting | Ours<br/>5k iter | Ours<br/>10k iter | Ours<br/>12.5k iter | Original AlphaNIST<br/>25k iter |
 | --- | :---: | :---: | :---: | :---: |
@@ -44,32 +60,23 @@ With 8,192 parallel environments, the policy reaches **98.4%** evaluation succes
 | Near-mating | 95.7 | 98.7 | 98.7 | – |
 | **Overall** | 94.8 | 98.4 | **98.7** | 86.9 |
 
-Evaluation follows the AlphaNIST protocol: 5 seeds × 32 trials per task,
-and sampled policy actions. Success requires assembly within 15 seconds without a safety violation.
 
-Please note that the AlphaNIST result uses a different simulator, asset set, and implementation, so it is not a direct comparison.
 
-At 10K iterations every task reaches at least 95 %. The full learning curve can be found in
-[`results/reference_e8192.csv`](results/reference_e8192.csv).
+> [!NOTE]
+> Evaluation follows the AlphaNIST protocol: 5 seeds × 32 trials per task, and sampled policy actions. Success requires assembly within 15 seconds without a safety violation.
+> Please note that the AlphaNIST result uses a different simulator, asset set, and implementation, so it is not a direct comparison.
+
+
+**More visuals.** MP4 files can be found in [docs/videos](docs/videos).
 
 <table>
 <tr>
-<td align="center"><img src="docs/board_start.png" width="100%"/><br/>20 parts at random initial poses</td>
-<td align="center"><img src="docs/board_done.png" width="100%"/><br/>After assembly</td>
+<td align="center">https://github.com/user-attachments/assets/60241ac2-89e9-4702-907a-cbec783369f9</td>
+<td align="center">https://github.com/user-attachments/assets/8eb57846-5abc-4145-8ebb-3c181249a0fe</td>
+<td align="center">https://github.com/user-attachments/assets/d3960eca-87aa-4707-9ef0-f01f1a15aa56</td>
 </tr>
 </table>
 
-**More visual results:** full sequential assembly of all 20 parts (mean actions; policy at half speed,
-moves between parts at double speed).
-
-| Video | Assembly order | Success |
-| --- | --- | :---: |
-| [Seed 3](docs/videos/demo_it12500_seed3.mp4) <br/><sub>12.5k iter</sub> | R16 → N16 → DSUB → Gs → BNC → P16 → P12 → RJ45 → R12 → Gl → N4 → R8 → WP → Gm → USB → N12 → R4 → P8 → P4 → N8 | 20/20 (100%) |
-| [Seed 1](docs/videos/demo_it12650_seed1.mp4) <br/><sub>12.65k iter</sub> | R8 → R4 → Gs → N8 → N12 → P4 → P8 → P12 → RJ45 → USB → WP → P16 → BNC → N4 → Gm → R12 → Gl → DSUB → N16 → R16 | 20/20 (100%) |
-| [Seed 4](docs/videos/demo_it12650_seed4.mp4) <br/><sub>12.65k iter</sub> | P16 → N16 → USB → N4 → DSUB → RJ45 → Gs → Gl → P4 → R12 → N12 → BNC → R8 → P12 → WP → P8 → R16 → N8 → R4 → Gm | 20/20 (100%) |
-
-<sub>R: round peg (rod), P: rectangular peg, Gs/Gm/Gl: small/medium/large gear, N: nut (M4–M16), sizes in mm;
-connectors: BNC, D-sub (DSUB), RJ45, USB-A (USB), waterproof (WP). 12.65k iter is the last checkpoint of the reference run.</sub>
 
 ## Quick start
 
