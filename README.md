@@ -126,10 +126,14 @@ The learner and workers must share the run directory. For clusters without Slurm
 
 ## Acknowledgements
 
-This project builds on *AlphaNIST: Emergent Assembly Skills from Binary Task Rewards* and
-*A Balanced Data Diet: Addressing the Exploration Bottleneck in Mega-Scale RL for Robot Control*
-(Zhang et al., 2026). Thanks to Octi Zhang for discussions and help with training details.
-The board assets come from [UW Lab](https://github.com/UW-Lab/UWLab) and the robot model from
+This project builds on 
+
+- *AlphaNIST: Emergent Assembly Skills from Binary Task Rewards* and
+- *A Balanced Data Diet: Addressing the Exploration Bottleneck in Mega-Scale RL for Robot Control*
+(Zhang et al., 2026).
+
+Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful discussions with training details.
+The NIST board assets come from [UW Lab](https://github.com/UW-Lab/UWLab) and the robot model from
 [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
 
 See [`THIRD_PARTY.md`](THIRD_PARTY.md) for third-party code, assets, and licenses.
