@@ -2,9 +2,11 @@
 
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.x-1f6feb) ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
 
-[Tao Sun](https://taosun.io) | Stanford University
+**[Tao Sun](https://taosun.io) | Stanford University**
 
-<img src="docs/teaser.gif" width="100%"/>
+<!-- <img src="docs/teaser.gif" width="100%"/> -->
+https://github.com/user-attachments/assets/81129b64-3911-485c-b9f9-cc1282c2d831
+
 
 *A single reinforcement-learning policy for all 20 assemblies of the NIST Assembly Task Board,
 learned from binary rewards with a Franka arm in MuJoCo.*
@@ -13,61 +15,67 @@ learned from binary rewards with a Franka arm in MuJoCo.*
 
 This repository is an **independent implementation** of the approach introduced by
 [AlphaNIST](https://alpha-nist.github.io/) and [Success Guided Sampling (SGS)](https://sgs-rl.github.io/).
-It is built in MuJoCo environment. Since the AlphaNIST hasn’t yet released its source code, I made own design choices for contact modeling, the action space and the start-state
+It is built in MuJoCo environment. 
+
+Since the AlphaNIST hasn’t yet released its source code (as of Oct 21, 2026), I made own design choices for contact modeling, the action space and the start-state
 distributions. I am not affiliated with or endorsed by the AlphaNIST authors.
 
-## Results
+## Evaluation results
 
 With 8,192 parallel environments, the policy reaches **98.4%** evaluation success after 10K PPO iterations, outperforming the AlphaNIST’s performance with less than half of the 25K iterations reported.
 
 <p align="center"><img src="results/success_vs_iteration.png" width="100%"/></p>
 
-Evaluation success rate (%) with 8,192 environments, by start state:
+**Success rate (%) by training iterations.**
 
-| Start state | AssembleNIST<br/>5K iter | AssembleNIST<br/>10K iter | AssembleNIST<br/>12.5K iter | AlphaNIST paper<br/>25K iter |
+At 10k iterations every task reaches at least 95%. The full learning curve can be found in
+[`results/reference_e8192.csv`](results/reference_e8192.csv).
+
+<table>
+<tr>
+<td align="center"><img src="docs/board_start.png" width="100%"/><br/>20 parts at random initial poses</td>
+<td align="center"><img src="docs/board_done.png" width="100%"/><br/>After assembly</td>
+</tr>
+</table>
+
+**Success rate (%) by part type.**
+
+| Part type | Ours<br/>5k iter | Ours<br/>10k iter | Ours<br/>12.5k iter | Original AlphaNIST<br/>25k iter |
+| --- | :---: | :---: | :---: | :---: |
+| Rods | 96.6 | 98.6 | 98.6 | – |
+| Pegs | 96.6 | 98.1 | 98.6 | – |
+| Gears | 98.1 | 98.3 | 99.0 | – |
+| Nuts | 87.2 | 98.0 | 97.5 | – |
+| Connectors | 96.1 | 99.0 | 99.6 | – |
+| **Overall** | 94.8 | 98.4 | **98.7** | 86.9 |
+
+**Success rate (%) by starting state.**
+
+| Starting | Ours<br/>5k iter | Ours<br/>10k iter | Ours<br/>12.5k iter | Original AlphaNIST<br/>25k iter |
 | --- | :---: | :---: | :---: | :---: |
 | Loose | 91.6 | 96.9 | 98.1 | – |
 | Pickup | 93.9 | 98.4 | 98.8 | – |
 | Transport | 95.1 | 99.4 | 98.8 | – |
 | Partial | 97.8 | 98.7 | 99.0 | – |
 | Near-mating | 95.7 | 98.7 | 98.7 | – |
-| **Overall** | **94.8** | **98.4** | **98.7** | **86.9** |
+| **Overall** | 94.8 | 98.4 | **98.7** | 86.9 |
 
-Evaluation success rate (%) by part type (mean over the tasks of each type):
 
-| Part type | AssembleNIST<br/>5K iter | AssembleNIST<br/>10K iter | AssembleNIST<br/>12.5K iter |
-| --- | :---: | :---: | :---: |
-| Rods (4, 8, 12, 16 mm) | 96.6 | 98.6 | 98.6 |
-| Pegs (4, 8, 12, 16 mm) | 96.6 | 98.1 | 98.6 |
-| Gears (small, medium, large) | 98.1 | 98.3 | 99.0 |
-| Nuts (M4, M8, M12, M16) | 87.2 | 98.0 | 97.5 |
-| Connectors (BNC, D-sub, RJ45, USB, waterproof) | 96.1 | 99.0 | 99.6 |
-| **Overall** | **94.8** | **98.4** | **98.7** |
+> [!NOTE]
+> Evaluation follows the AlphaNIST protocol: 5 seeds × 32 trials per task, and sampled policy actions. Success requires assembly within 15 seconds without a safety violation.
+> Please note that the AlphaNIST result uses a different simulator, asset set, and implementation, so it is not a direct comparison.
 
-Evaluation follows the AlphaNIST protocol: 5 seeds × 32 trials per task,
-and sampled policy actions. Success requires assembly within 15 seconds without a safety violation.
 
-Please note that the AlphaNIST result uses a different simulator, asset set, and implementation, so it is not a direct comparison.
-
-At 10K iterations every task reaches at least 95 %. The full learning curve can be found in
-[`results/reference_e8192.csv`](results/reference_e8192.csv).
+**More visuals.** MP4 files can be found in [docs/videos](docs/videos).
 
 <table>
 <tr>
-<td align="center"><img src="docs/board_start.png" width="100%"/><br/><sub>20 parts at random poses</sub></td>
-<td align="center"><img src="docs/board_done.png" width="100%"/><br/><sub>after sequential assembly</sub></td>
+<td align="center">https://github.com/user-attachments/assets/60241ac2-89e9-4702-907a-cbec783369f9</td>
+<td align="center">https://github.com/user-attachments/assets/8eb57846-5abc-4145-8ebb-3c181249a0fe</td>
+<td align="center">https://github.com/user-attachments/assets/d3960eca-87aa-4707-9ef0-f01f1a15aa56</td>
 </tr>
 </table>
 
-### More visual results
-
-Full sequential-assembly runs (all 20 parts, mean actions; policy at half speed, moves between parts at double speed):
-
-| Video | Policy | Assembly order | Result |
-| --- | --- | --- | --- |
-| [`demo_it12500_seed3.mp4`](docs/videos/demo_it12500_seed3.mp4) | 12.5K iter | M16 nut 2nd, D-sub 3rd, rest random | 20 / 20 |
-| [`demo_it12650_seed1.mp4`](docs/videos/demo_it12650_seed1.mp4) | 12.65K iter (end of the reference run) | random | 20 / 20 |
-| [`demo_it12650_seed4.mp4`](docs/videos/demo_it12650_seed4.mp4) | 12.65K iter (end of the reference run) | M16 nut 2nd, USB 3rd, rest random | 20 / 20 |
 
 ## Quick start
 
@@ -151,7 +159,7 @@ This project builds on
 - *A Balanced Data Diet: Addressing the Exploration Bottleneck in Mega-Scale RL for Robot Control*
 (Zhang et al., 2026).
 
-Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful discussions with training details.
+Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful discussions with training details!
 The NIST board assets come from [UW Lab](https://github.com/UW-Lab/UWLab) and the robot model from
 [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
 
