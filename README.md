@@ -170,7 +170,7 @@ This project builds on
 - *A Balanced Data Diet: Addressing the Exploration Bottleneck in Mega-Scale RL for Robot Control*
 (Zhang et al., 2026).
 
-Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful guidance with training details and [Jing Zhang](https://jingz6676.github.io/) for insightful discussions!
+Sincerely thanks to [Octi Zhang](https://zoctipus.github.io) for grateful guidance with training details (including reset bank configurations, PPO settings, and state sampling) and [Jing Zhang](https://jingz6676.github.io/) for insightful discussions!
 The NIST board assets come from [UW Lab](https://github.com/UW-Lab/UWLab) and the robot model from
 [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
 
