@@ -5,3 +5,5 @@ data/
 runs/
 logs/
 *.mp4
+!docs/videos/*.mp4
+MUJOCO_LOG.TXT

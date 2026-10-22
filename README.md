@@ -24,7 +24,14 @@ With 8,192 parallel environments, the policy reaches **98.4%** evaluation succes
 
 **Evaluation success rate (%) by part type**
 
-
+| Part type | Ours<br/>5k iter | Ours<br/>10k iter | Ours<br/>12.5k iter | Original AlphaNIST<br/>25k iter |
+| --- | :---: | :---: | :---: | :---: |
+| Rods | 96.6 | 98.6 | 98.6 | – |
+| Pegs | 96.6 | 98.1 | 98.6 | – |
+| Gears | 98.1 | 98.3 | 99.0 | – |
+| Nuts | 87.2 | 98.0 | 97.5 | – |
+| Connectors | 96.1 | 99.0 | 99.6 | – |
+| **Overall** | 94.8 | 98.4 | **98.7** | 86.9 |
 
 **Evaluation success rate (%) by starting state**
 
@@ -51,6 +58,15 @@ At 10K iterations every task reaches at least 95 %. The full learning curve can 
 <td align="center"><img src="docs/board_done.png" width="100%"/><br/>After assembly</td>
 </tr>
 </table>
+
+**More visual results:** full sequential-assembly runs of all 20 parts (mean actions; policy at half speed,
+moves between parts at double speed):
+
+| Video | Policy | Assembly order | Result |
+| --- | --- | --- | --- |
+| [`demo_it12500_seed3.mp4`](docs/videos/demo_it12500_seed3.mp4) | 12.5k iter | M16 nut 2nd, D-sub 3rd, rest random | 20 / 20 |
+| [`demo_it12650_seed1.mp4`](docs/videos/demo_it12650_seed1.mp4) | 12.65k iter (end of the reference run) | random | 20 / 20 |
+| [`demo_it12650_seed4.mp4`](docs/videos/demo_it12650_seed4.mp4) | 12.65k iter (end of the reference run) | M16 nut 2nd, USB 3rd, rest random | 20 / 20 |
 
 ## Quick start
 
