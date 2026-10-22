@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "assemblenist"
+version = "0.1.0"
+description = "AssembleNIST: one RL policy for all 20 NIST board assemblies, trained from binary rewards in MuJoCo"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mujoco>=3.3", "torch>=2.1", "numpy", "scipy", "imageio[ffmpeg]", "pillow", "matplotlib"]
+
+[tool.setuptools.packages.find]
+include = ["assembly_policy*"]

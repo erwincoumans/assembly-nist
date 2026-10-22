@@ -1,0 +1,12 @@
+{
+ "1": "bnc_plug",
+ "2": "bnc_socket",
+ "3": "dsub_plug",
+ "4": "dsub_socket",
+ "5": "rj45_plug",
+ "6": "rj45_socket",
+ "7": "usb_a_plug",
+ "8": "usb_a_socket",
+ "9": "waterproof_plug",
+ "10": "waterproof_socket"
+}

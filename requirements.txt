@@ -1,0 +1,7 @@
+mujoco>=3.3
+torch>=2.1
+numpy
+scipy
+imageio[ffmpeg]
+pillow
+matplotlib
