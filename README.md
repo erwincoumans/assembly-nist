@@ -2,7 +2,7 @@
 
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.x-1f6feb) ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
 
-**[Tao Sun](https://taosun.io) | Stanford University**
+By **[Tao Sun](https://taosun.io) | Stanford University**
 
 <!-- <img src="docs/teaser.gif" width="100%"/> -->
 https://github.com/user-attachments/assets/81129b64-3911-485c-b9f9-cc1282c2d831
@@ -142,8 +142,7 @@ The learner and workers must share the run directory. For clusters without Slurm
 ## What failed first and turned out to matter most?
 
 My first long runs on 8k environments stalled out at a 46% success rate after 23k iterations. Getting the policy to learn efficiently
-took several non-obvious changes; these are the lessons that mattered most. The final run changed several of
-them at once, so their individual contributions were not isolated.
+took several non-obvious changes. Below are the lessons that I feel matter most.
 
 1. **Keeping RL exploring helps in this task.** With entropy 0.001, an initial std of 0.5 and a std floor of 0.1, the SR crept up about 1 point per
    1000 iterations. A learned std starting at 1.0 with no floor and entropy 0.005 reached 49% after 2000 iterations
@@ -171,7 +170,7 @@ This project builds on
 - *A Balanced Data Diet: Addressing the Exploration Bottleneck in Mega-Scale RL for Robot Control*
 (Zhang et al., 2026).
 
-Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful guidance with training details and [Jing Zhang](https://jingz6676.github.io/) for helpful discussions!
+Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful guidance with training details and [Jing Zhang](https://jingz6676.github.io/) for insightful discussions!
 The NIST board assets come from [UW Lab](https://github.com/UW-Lab/UWLab) and the robot model from
 [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
 
