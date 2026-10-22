@@ -59,14 +59,17 @@ At 10K iterations every task reaches at least 95 %. The full learning curve can 
 </tr>
 </table>
 
-**More visual results:** full sequential-assembly runs of all 20 parts (mean actions; policy at half speed,
-moves between parts at double speed):
+**More visual results:** full sequential assembly of all 20 parts (mean actions; policy at half speed,
+moves between parts at double speed).
 
-| Video | Policy | Assembly order | Result |
-| --- | --- | --- | --- |
-| [`demo_it12500_seed3.mp4`](docs/videos/demo_it12500_seed3.mp4) | 12.5k iter | M16 nut 2nd, D-sub 3rd, rest random | 20 / 20 |
-| [`demo_it12650_seed1.mp4`](docs/videos/demo_it12650_seed1.mp4) | 12.65k iter (end of the reference run) | random | 20 / 20 |
-| [`demo_it12650_seed4.mp4`](docs/videos/demo_it12650_seed4.mp4) | 12.65k iter (end of the reference run) | M16 nut 2nd, USB 3rd, rest random | 20 / 20 |
+| Video | Assembly order | Success |
+| --- | --- | :---: |
+| [Seed 3](docs/videos/demo_it12500_seed3.mp4) <br/><sub>12.5k iter</sub> | R16 → N16 → DSUB → Gs → BNC → P16 → P12 → RJ45 → R12 → Gl → N4 → R8 → WP → Gm → USB → N12 → R4 → P8 → P4 → N8 | 20/20 (100%) |
+| [Seed 1](docs/videos/demo_it12650_seed1.mp4) <br/><sub>12.65k iter</sub> | R8 → R4 → Gs → N8 → N12 → P4 → P8 → P12 → RJ45 → USB → WP → P16 → BNC → N4 → Gm → R12 → Gl → DSUB → N16 → R16 | 20/20 (100%) |
+| [Seed 4](docs/videos/demo_it12650_seed4.mp4) <br/><sub>12.65k iter</sub> | P16 → N16 → USB → N4 → DSUB → RJ45 → Gs → Gl → P4 → R12 → N12 → BNC → R8 → P12 → WP → P8 → R16 → N8 → R4 → Gm | 20/20 (100%) |
+
+<sub>R: round peg (rod), P: rectangular peg, Gs/Gm/Gl: small/medium/large gear, N: nut (M4–M16), sizes in mm;
+connectors: BNC, D-sub (DSUB), RJ45, USB-A (USB), waterproof (WP). 12.65k iter is the last checkpoint of the reference run.</sub>
 
 ## Quick start
 
