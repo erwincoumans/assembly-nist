@@ -22,16 +22,20 @@ With 8,192 parallel environments, the policy reaches **98.4%** evaluation succes
 
 <p align="center"><img src="results/success_vs_iteration.png" width="100%"/></p>
 
-Evaluation success rate (%) with 8,192 environments, by start state:
+**Evaluation success rate (%) by part type**
 
-| Start state | AssembleNIST<br/>5K iter | AssembleNIST<br/>10K iter | AssembleNIST<br/>12.5K iter | AlphaNIST paper<br/>25K iter |
+
+
+**Evaluation success rate (%) by starting state**
+
+| Starting | Ours<br/>5k iter | Ours<br/>10k iter | Ours<br/>12.5k iter | Original AlphaNIST<br/>25k iter |
 | --- | :---: | :---: | :---: | :---: |
 | Loose | 91.6 | 96.9 | 98.1 | – |
 | Pickup | 93.9 | 98.4 | 98.8 | – |
 | Transport | 95.1 | 99.4 | 98.8 | – |
 | Partial | 97.8 | 98.7 | 99.0 | – |
 | Near-mating | 95.7 | 98.7 | 98.7 | – |
-| **Overall** | **94.8** | **98.4** | **98.7** | **86.9** |
+| **Overall** | 94.8 | 98.4 | **98.7** | 86.9 |
 
 Evaluation follows the AlphaNIST protocol: 5 seeds × 32 trials per task,
 and sampled policy actions. Success requires assembly within 15 seconds without a safety violation.
@@ -43,8 +47,8 @@ At 10K iterations every task reaches at least 95 %. The full learning curve can 
 
 <table>
 <tr>
-<td align="center"><img src="docs/board_start.png" width="100%"/><br/><sub>20 parts at random poses</sub></td>
-<td align="center"><img src="docs/board_done.png" width="100%"/><br/><sub>after sequential assembly</sub></td>
+<td align="center"><img src="docs/board_start.png" width="100%"/><br/>20 parts at random initial poses</td>
+<td align="center"><img src="docs/board_done.png" width="100%"/><br/>After assembly</td>
 </tr>
 </table>
 
@@ -130,7 +134,7 @@ This project builds on
 - *A Balanced Data Diet: Addressing the Exploration Bottleneck in Mega-Scale RL for Robot Control*
 (Zhang et al., 2026).
 
-Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful discussions with training details.
+Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful discussions with training details!
 The NIST board assets come from [UW Lab](https://github.com/UW-Lab/UWLab) and the robot model from
 [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
 
