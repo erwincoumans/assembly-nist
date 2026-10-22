@@ -27,7 +27,7 @@ def run_curve(run):
     for f in sorted(Path(run, "eval").glob("*.json")):
         d = json.loads(f.read_text())
         if d.get("meta", {}).get("iteration") is not None:
-            pts.append((d["meta"]["iteration"], 100 * d["overall"]["mean"]))
+            pts.append((d["meta"]["iteration"], 100 * d["overall"]["mean"], 100 * d["overall"]["std"]))
     return sorted(pts)
 
 
@@ -40,12 +40,16 @@ def main():
     fig, ax = plt.subplots(figsize=(11, 4.6), dpi=200)
     if a.reference and Path(a.reference).exists():
         rows = list(csv.DictReader(open(a.reference)))
-        pts = [(int(r["iteration"]), float(r["success"])) for r in rows if r["success"]]
-        ax.plot(*zip(*pts), color=COLORS[0], lw=1.8, marker="o", ms=4.5, label="AssembleNIST, 8K envs (reference run)")
+        pts = [(int(r["iteration"]), float(r["success"]), float(r["std"])) for r in rows if r["success"]]
+        x, y, e = zip(*pts)   # error bars: standard deviation over the 5 evaluation seeds
+        ax.errorbar(x, y, yerr=e, color=COLORS[0], lw=1.8, marker="o", ms=4.5, elinewidth=1.2, capsize=3,
+                    label="AssembleNIST, 8K envs (reference run)")
     for k, run in enumerate(a.runs):
         pts = run_curve(run)
         if pts:
-            ax.plot(*zip(*pts), color=COLORS[(k + 1) % len(COLORS)], lw=1.2, marker="o", ms=3, label=Path(run).name)
+            x, y, e = zip(*pts)
+            ax.errorbar(x, y, yerr=e, color=COLORS[(k + 1) % len(COLORS)], lw=1.2, marker="o", ms=3, elinewidth=1.0,
+                        capsize=2, label=Path(run).name)
     for envs, val in PAPER.items():
         ax.plot([25000], [val], marker="D", ms=8, mfc="white", mec="black", mew=1.8, ls="none")
         ax.annotate(f"AlphaNIST, {envs // 1024}K envs: {val}%", (25000, val), xytext=(-10, 0), textcoords="offset points",
@@ -56,7 +60,9 @@ def main():
     ax.grid(True, color="#e6e5df", lw=0.8); ax.set_axisbelow(True)
     for sp in ("top", "right"):
         ax.spines[sp].set_visible(False)
-    ax.legend(frameon=False, loc="lower right")
+    h, l = ax.get_legend_handles_labels()
+    order = sorted(range(len(l)), key=lambda i: l[i].startswith("AlphaNIST"))    # our curves first, paper last
+    ax.legend([h[i] for i in order], [l[i] for i in order], frameon=False, loc="lower right")
     fig.tight_layout()
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(a.out)
