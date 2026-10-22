@@ -18,7 +18,7 @@ distributions. I am not affiliated with or endorsed by the AlphaNIST authors.
 
 ## Results
 
-With 8,192 parallel environments, the policy reaches 98.4 % evaluation success after 10K PPO iterations, outperforming the AlphaNIST’s performance with more than half of the 25K iterations reported.
+With 8,192 parallel environments, the policy reaches **98.4%** evaluation success after 10K PPO iterations, outperforming the AlphaNIST’s performance with more than half of the 25K iterations reported.
 
 <p align="center"><img src="results/success_vs_iteration.png" width="100%"/></p>
 
@@ -68,28 +68,27 @@ Use `MUJOCO_GL=osmesa` if EGL is unavailable. The demo generates settled start p
 `--seed` changes the layout and assembly order, and `--pin 2:N16+3:connector` fixes positions in the order.
 Pretrained policies after 2.5K, 5K, 7.5K, 10K and 12.5K iterations are in [`checkpoints/`](checkpoints).
 
-## Train and evaluate
+## Training and evaluation
 
-Build the reset banks before training or evaluation:
+First, we need to build the reset banks before training:
 
 ```bash
 python scripts/build_banks.py --workers 16
 ```
 
-Evaluate the pretrained policy (3,200 episodes; about one hour on 16 CPU cores):
+Evaluate the pretrained policy. It runs 3200 episodes for about one hour on 16 CPU cores:
 
 ```bash
 python -m assembly_policy.evaluate --policy checkpoints/e8192_it12500.pt --out eval.json
 ```
 
-For a small run on one machine:
+For training the policy, you can run with one machine on a smaller environment size (e.g., 512):
 
 ```bash
 python -m assembly_policy.train --run-dir runs/small --envs 512 --nthread 32
 ```
 
-The default training configuration uses 8,192 environments and 10K PPO iterations.
-Runs resume automatically from their latest checkpoint.
+To achieve best performance, the default training configuration uses 8,192 environments and 10K PPO iterations. Below is a script to train it on a Slurm cluster. 
 
 <details>
 <summary>Distributed training with Slurm</summary>
@@ -111,7 +110,7 @@ The learner and workers must share the run directory. For clusters without Slurm
 
 </details>
 
-## Method
+## Method details
 
 - **Policy:** a SimBa-style actor and critic trained with PPO, using part, fixture, and gripper point clouds
   plus proprioception history.
@@ -127,15 +126,13 @@ The learner and workers must share the run directory. For clusters without Slurm
 
 This project builds on 
 
-- *AlphaNIST: Emergent Assembly Skills from Binary Task Rewards* and
+- *AlphaNIST: Emergent Assembly Skills from Binary Task Rewards*.
 - *A Balanced Data Diet: Addressing the Exploration Bottleneck in Mega-Scale RL for Robot Control*
 (Zhang et al., 2026).
 
 Thanks to [Octi Zhang](https://zoctipus.github.io) for helpful discussions with training details.
 The NIST board assets come from [UW Lab](https://github.com/UW-Lab/UWLab) and the robot model from
 [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
-
-See [`THIRD_PARTY.md`](THIRD_PARTY.md) for third-party code, assets, and licenses.
 
 ## Citation
 
@@ -170,8 +167,8 @@ If you use AssembleNIST, please cite this repository together with AlphaNIST and
 
 ## License
 
-The code is released under the [MIT License](LICENSE). Third-party assets keep their own licenses; see
-[`THIRD_PARTY.md`](THIRD_PARTY.md).
+The code is released under the [MIT License](LICENSE). See
+[`THIRD_PARTY.md`](THIRD_PARTY.md) for third-party assets, codes, and their licenses. 
 
 ## Contact
 
