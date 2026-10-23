@@ -1,4 +1,4 @@
-# NIST Assembly Policy Learning in MuJoCo
+# Assembly Policy Learning in MuJoCo
 
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.x-1f6feb) ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
 
@@ -8,7 +8,7 @@ By **[Tao Sun](https://taosun.io) | Stanford University**
 https://github.com/user-attachments/assets/81129b64-3911-485c-b9f9-cc1282c2d831
 
 
-*A single reinforcement-learning policy for all 20 assemblies of the NIST Assembly Task Board,
+*A single reinforcement-learning (PPO) policy for all 20 assemblies of the NIST Assembly Task Board 1 by a Franka arm,
 learned from binary rewards with a Franka arm in MuJoCo.*
 
 ## Disclaimer
