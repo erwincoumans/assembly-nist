@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite AssembleNIST together with AlphaNIST
+  and Success Guided Sampling. See CITATION.bib for the related papers.
+type: software
+title: "AssembleNIST: One Policy for All NIST Board Assemblies in MuJoCo"
+authors:
+  - family-names: Sun
+    given-names: Tao
+    affiliation: Stanford University
+    website: https://taosun.io
+repository-code: https://github.com/suniique/assembly-nist
+url: https://github.com/suniique/assembly-nist
+abstract: >-
+  An independent MuJoCo implementation of the AlphaNIST approach to robotic
+  assembly. A single reinforcement-learning policy controls a Franka Panda
+  arm for all 20 tasks on the NIST Assembly Task Board 1. The repository
+  includes PyTorch PPO training, Success Guided Sampling, pretrained
+  policies, simulation assets, evaluation, and visualization tools.
+keywords:
+  - robotic assembly
+  - reinforcement learning
+  - MuJoCo
+  - NIST Assembly Task Board
+  - Franka Panda
+  - AlphaNIST
+  - Proximal Policy Optimization
+  - Success Guided Sampling
+  - PyTorch
+license: MIT
