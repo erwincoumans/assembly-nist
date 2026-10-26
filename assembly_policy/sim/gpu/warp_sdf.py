@@ -200,13 +200,15 @@ def grid_sdf(p: wp.vec3, a: vec_pluginattr, grad: bool) -> wp.vec4:
     fx = (p[0] - a[4]) / h
     fy = (p[1] - a[5]) / h
     fz = (p[2] - a[6]) / h
-    cx = wp.clamp(fx, 0.0, float(nx) - 1.000001)
-    cy = wp.clamp(fy, 0.0, float(ny) - 1.000001)
-    cz = wp.clamp(fz, 0.0, float(nz) - 1.000001)
+    cx = wp.clamp(fx, 0.0, float(nx - 1))
+    cy = wp.clamp(fy, 0.0, float(ny - 1))
+    cz = wp.clamp(fz, 0.0, float(nz - 1))
     e = wp.vec3((fx - cx) * h, (fy - cy) * h, (fz - cz) * h)
-    ix = int(wp.floor(cx))
-    iy = int(wp.floor(cy))
-    iz = int(wp.floor(cz))
+    # (the cell's corner at most n - 2: the far face is a cell's t = 1, never past the grid - n - 1.000001 is n - 1
+    # in float32 beyond 16 cells, which read the next row, or past the array, at the far faces)
+    ix = wp.min(int(wp.floor(cx)), nx - 2)
+    iy = wp.min(int(wp.floor(cy)), ny - 2)
+    iz = wp.min(int(wp.floor(cz)), nz - 2)
     tx = cx - float(ix)
     ty = cy - float(iy)
     tz = cz - float(iz)

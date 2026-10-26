@@ -5,6 +5,11 @@ For each task with SDF geoms, a MuJoCo Warp model holds only the fixture (static
 geoms, a world per environment of the task. Before each MMP solve the parts' poses are copied into it, MuJoCo Warp
 finds the contacts, and they are written as one-point MMP manifolds (MMP_Contact4: the point on the fixture with
 the signed distance, the normal on the fixture pointing to the part) after MMP's own contacts.
+
+MuJoCo Warp writes its contacts to slots taken with atomics, in a different order every run, and MMP's determinism
+sort is stable by (bodyA, bodyB, childA, childB), which all of a part's contacts with its fixture share but childA:
+so the contacts are put in an order of their contents (canonical), with childA the geom pair and the contact's rank
+among the pair's - also the key that the manifold model's warm start matches a contact to the previous step's by.
 """
 from __future__ import annotations
 
@@ -85,10 +90,33 @@ def _to_mmp(nacon: wp.array(dtype=int), dist: wp.array(dtype=float), pos: wp.arr
     out_i[r, 21] = 0
     out_i[r, 22] = part_body[w]
     out_i[r, 23] = -fixture_body[w]
-    out_i[r, 24] = i
+    out_i[r, 24] = g[0] * 64 + g[1]                  # (the geom pair; canonical() adds the contact's rank)
     out_i[r, 25] = -2
     out_i[r, 26] = 0
     out_i[r, 27] = 0
+
+
+def canonical(records):
+    """Contact records (n, 28) put in an order of their contents in place: by the part's body and the geom pair (childA
+    as _to_mmp writes it), then the point, the distance and the normal; childA becomes geom pair * 1024 + the rank among
+    the pair's contacts."""
+    n = len(records)
+    if n < 2:
+        if n:
+            records.view(torch.int32)[:, 24] *= 1024
+        return
+    b = records.view(torch.int32)
+    pack = lambda hi, lo: (b[:, hi].long() << 32) | (b[:, lo].long() & 0xFFFFFFFF)
+    order = torch.arange(n, device=records.device)
+    for key in (pack(18, 17), pack(16, 3), pack(2, 1), pack(0, 24), pack(22, 24)):     # least significant first
+        order = order[torch.sort(key[order], stable=True).indices]
+    records[:] = records[order]
+    group = pack(22, 24)
+    start = torch.ones(n, dtype=torch.bool, device=records.device)
+    start[1:] = group[1:] != group[:-1]
+    index = torch.arange(n, device=records.device)
+    first = torch.cummax(torch.where(start, index, 0), 0).values
+    b[:, 24] = (b[:, 24] * 1024 + (index - first)).int()
 
 
 class _Task:
@@ -123,7 +151,7 @@ class SdfContacts:
         self.stream = wp.Stream(wp.get_device(device), cuda_stream=stream_ptr)
         bolt, nut, grid = warp_sdf.plugin_types()
         warp_sdf.install(bolt, nut, grid)
-        store = warp_sdf.GridStore(device)
+        store = self.store = warp_sdf.GridStore(device)     # (kept: the models hold raw pointers to its grids)
         self.tasks = [_Task(t[0], pcfg, *t[1:], device, store, grid, nconmax) for t in tasks]
         self.capacity = sum(t.capacity for t in self.tasks)
         self.records = torch.zeros(self.capacity, CONTACT_WORDS, device=device)
@@ -167,6 +195,7 @@ class SdfContacts:
                 self.records[out:out + k] = self.records[offset:offset + k].clone()
             out += k
             offset += t.capacity
+        canonical(self.records[:out])
         return out
 
 
