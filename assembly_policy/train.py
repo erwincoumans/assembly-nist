@@ -7,6 +7,10 @@ are written atomically every --save-every iterations and the run resumes automat
 
 python -m assembly_policy.train --run-dir runs/demo --envs 256 --iters 200          # small local run
 python -m assembly_policy.train --run-dir runs/e8192 --remote-workers 960           # the reported setting
+python -m assembly_policy.train --run-dir runs/mmp --backend mmp --envs 4096           # on the GPU (sim/gpu)
+
+On a GPU backend (--backend mjwarp or mmp) every environment keeps one task (an equal share of environments per
+task) and the success-guided sampler draws each one's starts from its task's bank entries.
 """
 from __future__ import annotations
 
@@ -72,6 +76,13 @@ def parse(argv=None):
     ap.add_argument("--n-fix", type=int, default=128)
     ap.add_argument("--n-grip", type=int, default=64)
     # infrastructure
+    ap.add_argument("--backend", default="mujoco", choices=("mujoco", "mjwarp", "mmp"),
+                    help="simulator: CPU MuJoCo (local threads or remote workers) or a GPU backend (sim/gpu)")
+    ap.add_argument("--backend-kw", default="{}", help="JSON options of the GPU backend")
+    ap.add_argument("--eval-backend", default=None, help="the background evaluations' simulator (default: --backend)")
+    ap.add_argument("--eval-backend-kw", default=None, help="its JSON options (default: --backend-kw)")
+    ap.add_argument("--sim-device", default="cuda:0",
+                    help="GPU(s) of a GPU backend's simulation: a comma-separated list splits the environments")
     ap.add_argument("--remote-workers", type=int, default=0, help="number of remote worker processes (0 = simulate here)")
     ap.add_argument("--nthread", type=int, default=int(os.environ.get("SLURM_CPUS_PER_TASK", 8)),
                     help="simulation threads when simulating locally")
@@ -107,6 +118,8 @@ class Trainer:
     def __init__(self, a):
         self.a = a
         self.dev = torch.device(a.device)
+        if self.dev.type == "cuda" and self.dev.index is None:      # (not whichever device a simulator makes current)
+            self.dev = torch.device("cuda", torch.cuda.current_device())
         self.tasks = resolve_tasks(a.tasks)
         self.run = Path(a.run_dir)
         self.run.mkdir(parents=True, exist_ok=True)
@@ -125,7 +138,17 @@ class Trainer:
         self._maybe_resume()
         horizon = int(round(self.ecfg.horizon_s / self.ecfg.control_dt))
         t0 = np.random.default_rng(a.seed + 7).integers(0, horizon, a.envs)   # desynchronized episode clocks
-        if a.remote_workers > 0:
+        if a.backend != "mujoco":
+            from .rl.vecenv import GpuVecEnv, MultiGpuVecEnv, split_tasks
+            devices = a.sim_device.split(",")
+            tasks = split_tasks(a.envs, len(self.tasks))
+            if len(devices) > 1:
+                self.env = MultiGpuVecEnv(a.backend, self.tasks, tasks, self.ecfg, self._provider, t0, devices=devices,
+                                          gather=self.dev, **json.loads(a.backend_kw))
+            else:
+                self.env = GpuVecEnv(a.backend, self.tasks, tasks, self.ecfg, self._provider, t0, device=devices[0],
+                                     **json.loads(a.backend_kw))
+        elif a.remote_workers > 0:
             from .rl.remote import RemoteVecEnv
             fine = set(self.ecfg.fine_families.split("+"))
             cost = [(FINE_STEP_COST if TASKS[t].family in fine and TASKS[t].family in FINE_STEP_COST else STEP_COST)
@@ -138,11 +161,11 @@ class Trainer:
             self.env = LocalVecEnv(self.tasks, a.envs, self.ecfg, self._provider, t0)
 
     # ------------------------------------------------------------- helpers
-    def _provider(self, k, finished=None, outcomes=None):
-        """Record finished episodes in the sampler, then draw k reset-bank entries."""
+    def _provider(self, k, finished=None, outcomes=None, tasks=None):
+        """Record finished episodes in the sampler, then draw k reset-bank entries (of the given tasks, one each)."""
         if finished is not None and len(finished):
             self.sampler.update(finished, outcomes)
-        e = self.sampler.sample(k)
+        e = self.sampler.sample(k) if tasks is None else self.sampler.sample_within(tasks, self.bank_T)
         return e, self.bank_S[e], self.bank_T[e]
 
     def _obs(self, o, ids=None):
@@ -173,7 +196,10 @@ class Trainer:
         log = open(out.with_suffix(".log"), "w")
         self._children.append(subprocess.Popen(
             [sys.executable, "-m", "assembly_policy.evaluate", "--policy", str(ck), "--tasks", "+".join(self.tasks),
-             "--bank-dir", str(self.a.bank_dir), "--out", str(out), "--nthread", str(self.a.eval_threads)],
+             "--bank-dir", str(self.a.bank_dir), "--out", str(out), "--nthread", str(self.a.eval_threads),
+             "--backend", self.a.eval_backend or self.a.backend,
+             "--backend-kw", self.a.eval_backend_kw or (self.a.backend_kw if not self.a.eval_backend else "{}"),
+             "--sim-device", self.a.sim_device.split(",")[0]],
             stdout=log, stderr=subprocess.STDOUT, cwd=str(ROOT), env={**os.environ, "OMP_NUM_THREADS": "2"}))
 
     def _maybe_resume(self):
@@ -333,6 +359,10 @@ class Trainer:
                        fam_success={f: (st["fam_s"][i] / st["fam_n"][i] if st["fam_n"][i] else None) for i, f in enumerate(FAMILIES)},
                        task_success={t: (st["task_s"][i] / st["task_n"][i] if st["task_n"][i] else None) for i, t in enumerate(self.tasks)},
                        visited=float((self.sampler.cnt > 0).mean()), **losses)
+            if torch.cuda.is_available():     # (per device: torch's reserved memory and the device's used memory, GB)
+                rec["gpu_mem"] = [(round(torch.cuda.memory_reserved(d) / 2**30, 2),
+                                   round((lambda f: (f[1] - f[0]) / 2**30)(torch.cuda.mem_get_info(d)), 2))
+                                  for d in range(torch.cuda.device_count())]
             log_f.write(json.dumps(rec) + "\n"); log_f.flush()
             if self.it % 10 == 0 or self.it <= 3:
                 fam = " ".join(f"{f[:4]}={v:.2f}" for f, v in rec["fam_success"].items() if v is not None)

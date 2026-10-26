@@ -3,6 +3,7 @@
 Actions are sampled from the policy (as in the paper) or, with --deterministic, the policy mean.
 
 python -m assembly_policy.evaluate --policy runs/<run>/model_010000.pt --out runs/<run>/eval/model_010000.json
+python -m assembly_policy.evaluate --policy checkpoints/e8192_it12500.pt --backend mjwarp --out eval_mjwarp.json   # on the GPU
 """
 from __future__ import annotations
 
@@ -10,6 +11,7 @@ import argparse
 import dataclasses
 import json
 import os
+import time
 from pathlib import Path
 
 import numpy as np
@@ -18,7 +20,8 @@ import torch
 from .rl.nets import ActorCritic
 from .rl.obs import PointTables
 from .sim.resets import FAMILIES
-from .sim.env import BatchedAssemblyEnv, EnvConfig, parse_scales
+from .sim.env import EnvConfig, parse_scales
+from .sim.gpu import BACKENDS, make_env
 from .sim.tasks import BANK_DIR, resolve_tasks
 
 
@@ -43,8 +46,9 @@ def wilson(k, n, z=1.96):
     return (max(0.0, c - h), min(1.0, c + h))
 
 
-def evaluate(policy, tasks, bank_dir, cfg, seeds=(0, 1, 2, 3, 4), trials=32):
-    """Roll out `trials` evaluation-bank starts per task and seed; returns overall / per-task / per-family success."""
+def evaluate(policy, tasks, bank_dir, cfg, seeds=(0, 1, 2, 3, 4), trials=32, backend="mujoco", backend_kw=None):
+    """Roll out `trials` evaluation-bank starts per task and seed; returns overall / per-task / per-family success.
+    backend: the simulator (sim/gpu.BACKENDS), with its keyword arguments backend_kw."""
     banks = [np.load(Path(bank_dir) / f"{t}_eval.npz") for t in tasks]
     entries = []  # (seed, task, idx)
     for s in seeds:
@@ -54,7 +58,7 @@ def evaluate(policy, tasks, bank_dir, cfg, seeds=(0, 1, 2, 3, 4), trials=32):
                 entries.append((s, k, i))
     E = np.array(entries)
     N = len(E)
-    env = BatchedAssemblyEnv(tasks, E[:, 1], cfg)
+    env = make_env(backend, tasks, E[:, 1], cfg, **(backend_kw or {}))
     env.set_states(np.arange(N), np.stack([banks[k]["states"][i] for _, k, i in E]), E[:, 1])
     fam = np.array([banks[k]["family"][i] for _, k, i in E])
     done_at = np.full(N, -1); success = np.zeros(N, bool); safety = np.zeros(N, bool)
@@ -101,7 +105,7 @@ class TorchPolicy:
 
     @torch.no_grad()
     def __call__(self, env):
-        o = env.observe()
+        o = env.observe_torch() if hasattr(env, "observe_torch") else env.observe()
         f = lambda k, dt=torch.float32: torch.as_tensor(o[k], dtype=dt, device=self.dev)
         pts = self.pts(self.remap[f("task", torch.long)], f("tcp_p"), f("tcp_R"), f("part_p"), f("part_q"), f("finger"))
         dist = self.model.dist(pts, f("proprio"))
@@ -114,15 +118,24 @@ def main():
     ap.add_argument("--tasks", default="all20")
     ap.add_argument("--bank-dir", default=str(BANK_DIR))
     ap.add_argument("--nthread", type=int, default=int(os.environ.get("SLURM_CPUS_PER_TASK", 8)))
-    ap.add_argument("--device", default="cpu")
+    ap.add_argument("--device", default=None, help="policy device (default: cpu for mujoco, else cuda)")
+    ap.add_argument("--backend", default="mujoco", choices=BACKENDS, help="simulator (GPU backends: sim/gpu)")
+    ap.add_argument("--sim-device", default="cuda:0", help="GPU of the simulation (GPU backends)")
+    ap.add_argument("--backend-kw", default="{}", help='JSON options of the GPU backend, e.g. \'{"geometry": "mjfit"}\'')
+    ap.add_argument("--seeds", type=int, default=5, help="evaluation seeds (paper: 5)")
+    ap.add_argument("--trials", type=int, default=32, help="trials per task and seed (paper: 32)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--deterministic", action="store_true", help="mean actions (default: sampled, as in the paper)")
     a = ap.parse_args()
     tasks = resolve_tasks(a.tasks)
-    pol = TorchPolicy(a.policy, tasks, a.device, deterministic=a.deterministic)
+    device = a.device or ("cpu" if a.backend == "mujoco" else a.sim_device)
+    pol = TorchPolicy(a.policy, tasks, device, deterministic=a.deterministic)
     cfg = env_config(pol.args, a.nthread)
-    res = evaluate(pol, tasks, a.bank_dir, cfg)
+    kw = {} if a.backend == "mujoco" else dict(device=a.sim_device, **json.loads(a.backend_kw))
+    t0 = time.time()
+    res = evaluate(pol, tasks, a.bank_dir, cfg, seeds=tuple(range(a.seeds)), trials=a.trials, backend=a.backend, backend_kw=kw)
     res["meta"] = dict(policy=str(a.policy), tasks=tasks, bank_dir=str(a.bank_dir), deterministic=a.deterministic,
+                       backend=a.backend, backend_kw=json.loads(a.backend_kw), wall_s=round(time.time() - t0, 1),
                        iteration=pol.it, transitions=pol.transitions,
                        env={k: v for k, v in dataclasses.asdict(cfg).items() if k != "nthread"})
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)

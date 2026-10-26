@@ -20,6 +20,7 @@ class ResetSampler:
         self.sum = np.zeros(n_entries, dtype=np.int64)
         self.rng = np.random.default_rng(seed)
         self._cdf = None
+        self._group_cdf = None
 
     def p_hat(self):
         return np.where(self.cnt > 0, self.sum / np.maximum(np.minimum(self.cnt, self.L), 1), 0.0)
@@ -40,6 +41,24 @@ class ResetSampler:
             self._cdf = np.cumsum(w) / w.sum()
         return np.minimum(np.searchsorted(self._cdf, self.rng.random(k)), self.M - 1)
 
+    def sample_within(self, groups, group_of):
+        """One entry per element of groups, each drawn from the entries of its group (group_of: the group of every
+        entry), by the same weights: for simulators whose environments keep their task (sim/gpu)."""
+        groups = np.asarray(groups)
+        out = np.empty(len(groups), dtype=np.int64)
+        if self._group_cdf is None or self._group_cdf[0] is not group_of:
+            self._group_cdf = (group_of, {})
+        cache = self._group_cdf[1]
+        for g in np.unique(groups):
+            sel = np.nonzero(groups == g)[0]
+            if g not in cache:
+                idx = np.nonzero(group_of == g)[0]
+                w = np.ones(len(idx)) if self.mode == "uniform" else self.weights()[idx]
+                cache[g] = (idx, np.cumsum(w) / w.sum())
+            idx, cdf = cache[g]
+            out[sel] = idx[np.minimum(np.searchsorted(cdf, self.rng.random(len(sel))), len(idx) - 1)]
+        return out
+
     def update(self, entries, outcomes):
         """Record episode outcomes (bool) for the given entries (may repeat)."""
         for e, y in zip(np.asarray(entries), np.asarray(outcomes, dtype=np.uint8)):
@@ -49,6 +68,7 @@ class ResetSampler:
             self.ptr[e] = (self.ptr[e] + 1) % self.L
             self.cnt[e] += 1
         self._cdf = None
+        self._group_cdf = None
 
     def state_dict(self):
         return dict(buf=self.buf, ptr=self.ptr, cnt=self.cnt, sum=self.sum, rng=self.rng.bit_generator.state)
@@ -57,6 +77,7 @@ class ResetSampler:
         self.buf, self.ptr, self.cnt, self.sum = s["buf"], s["ptr"], s["cnt"], s["sum"]
         self.rng.bit_generator.state = s["rng"]
         self._cdf = None
+        self._group_cdf = None
 
     def entropy_ratio(self):
         """exp(H(q)) / M: 1 for uniform, smaller when concentrated."""

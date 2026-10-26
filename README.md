@@ -139,6 +139,53 @@ The learner and workers must share the run directory. For clusters without Slurm
 
 </details>
 
+## GPU simulation backends
+
+Training and evaluation can also simulate all environments on one GPU (`assembly_policy/sim/gpu`), with the CPU
+environment's MDP (actions, gripper latch, observations, rewards, terminations) in torch:
+
+- **`--backend mjwarp`**: [MuJoCo Warp](https://github.com/google-deepmind/mujoco_warp) runs the same task models
+  (one model per task, a world per environment). The SDF plugin (thread and connector SDFs) is ported to Warp as
+  MuJoCo Warp's user SDFs (`warp_sdf.py`).
+- **`--backend mmp`**: Metamorphysics (a CUDA rigid-body engine with robots in reduced coordinates). The Menagerie
+  Panda becomes an articulation with the libfranka gains as implicit PD drives, its fingers coupled as by the MuJoCo
+  equality; parts, fixtures and the board are convex shapes taken from the task models, with the models' collision
+  bitmasks. How nuts' and connectors' SDFs collide is `--backend-kw '{"geometry": ...}'`: `"mjwarp"` (default:
+  MuJoCo Warp's SDF contacts, handed to Metamorphysics' solver), `"sdfdcd"` (Metamorphysics' SDF collider) or
+  `"mjfit"` (convex threads from [mjfit](https://github.com/younghyopark/mjfit); nuts only).
+
+```bash
+pip install mujoco-warp warp-lang          # --backend mjwarp
+bash plugin/build.sh                       # the plugin for this environment's MuJoCo (kept per version)
+python -m assembly_policy.evaluate --policy checkpoints/e8192_it12500.pt --backend mjwarp --out eval_mjwarp.json
+python -m assembly_policy.evaluate --policy checkpoints/e8192_it12500.pt --backend mmp --out eval_mmp.json
+python -m assembly_policy.train --run-dir runs/mmp --backend mmp --envs 4096
+```
+
+On a GPU backend each environment keeps one task (an equal share per task), and the success-guided sampler draws
+each environment's starts among its own task's bank entries.
+
+The pretrained policy (`e8192_it12500.pt`, trained on CPU MuJoCo) on the evaluation protocol above (3200 episodes;
+one RTX 5090 for the GPU backends, 16 CPU threads for MuJoCo):
+
+| Backend | Success | Safety | Wall time |
+| --- | :---: | :---: | :---: |
+| CPU MuJoCo | 98.9% | 0.8% | 58 min |
+| MuJoCo Warp | 95.6% | 1.9% | 4.2 min |
+| Metamorphysics | 96.3% | 1.5% | 1.4 min |
+
+| Task | R4 | R8 | R12 | R16 | P4 | P8 | P12 | P16 | Gs | Gm | Gl | N4 | N8 | N12 | N16 | BNC | DSUB | RJ45 | USB | WP |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| CPU MuJoCo | 99 | 98 | 99 | 100 | 96 | 99 | 99 | 98 | 99 | 100 | 99 | 99 | 100 | 98 | 99 | 99 | 99 | 99 | 99 | 99 |
+| MuJoCo Warp | 98 | 99 | 100 | 100 | 96 | 98 | 99 | 98 | 99 | 100 | 99 | 99 | 99 | 98 | 38 | 100 | 98 | 99 | 97 | 98 |
+| Metamorphysics | 99 | 99 | 100 | 100 | 94 | 88 | 98 | 99 | 100 | 99 | 98 | 91 | 98 | 95 | 95 | 100 | 99 | 94 | 88 | 92 |
+
+MuJoCo Warp matches the CPU on every task but N16 (the M16 nut), not resolved yet. For Metamorphysics: its contact
+stiffness is limited by the sub-step (0.125 / sub-step), so a control step is 4 collision detections of 16 sub-steps
+of 0.625 ms, which keeps the 35 N grip from sinking into parts; and the fingers' friction is 1.25 instead of
+MuJoCo's 2.0, since MuJoCo's soft friction lets a pushed part creep in the grasp (into the palm, where pegs align),
+which Metamorphysics' Coulomb friction does not.
+
 ## What failed first and turned out to matter most?
 
 My first long runs on 8k environments stalled out at a 46% success rate after 23k iterations. Getting the policy to learn efficiently

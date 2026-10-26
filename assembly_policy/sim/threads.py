@@ -14,7 +14,16 @@ import mujoco
 
 from .tasks import ROOT, scene_pose
 
-PLUGIN = Path(os.environ.get("ASSEMBLENIST_SDF_PLUGIN", ROOT / "plugin" / "build" / "libassemblenist_sdf.so"))
+def _plugin_path():
+    """$ASSEMBLENIST_SDF_PLUGIN, else a build for this MuJoCo version (plugin/build/mujoco-<version>, see build.sh), else
+    plugin/build: the library must be built against the MuJoCo it is loaded into."""
+    if "ASSEMBLENIST_SDF_PLUGIN" in os.environ:
+        return Path(os.environ["ASSEMBLENIST_SDF_PLUGIN"])
+    versioned = ROOT / "plugin" / "build" / f"mujoco-{mujoco.__version__}" / "libassemblenist_sdf.so"
+    return versioned if versioned.exists() else ROOT / "plugin" / "build" / "libassemblenist_sdf.so"
+
+
+PLUGIN = _plugin_path()
 SDF_GRID_DIR = ROOT / "assets" / "sdf"
 # radial nut-bolt clearance (m). 0.1 mm wedged the M4-M12 threads under the SDF contact search; 0.2 mm threads at
 # the right pitch and still blocks 5-50 N axial pushes.
