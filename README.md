@@ -151,8 +151,10 @@ environment's MDP (actions, gripper latch, observations, rewards, terminations) 
   Panda becomes an articulation with the libfranka gains as implicit PD drives, its fingers coupled as by the MuJoCo
   equality; parts, fixtures and the board are convex shapes taken from the task models, with the models' collision
   bitmasks. How nuts' and connectors' SDFs collide is `--backend-kw '{"geometry": ...}'`: `"mjwarp"` (default:
-  MuJoCo Warp's SDF contacts, handed to Metamorphysics' solver), `"sdfdcd"` (Metamorphysics' SDF collider) or
-  `"mjfit"` (convex threads from [mjfit](https://github.com/younghyopark/mjfit); nuts only).
+  MuJoCo Warp's SDF contacts, handed to Metamorphysics' solver), `"sdfdcd"` (Metamorphysics' SDF collider, with
+  settings per task in `mmp_sdf.py`; no MuJoCo Warp needed) or `"mjfit"` (convex threads from
+  [mjfit](https://github.com/younghyopark/mjfit); nuts only). Both `"mjwarp"` and `"sdfdcd"` are deterministic:
+  runs from the same states with the same actions are bitwise identical.
 
 ```bash
 pip install mujoco-warp warp-lang          # --backend mjwarp
@@ -171,14 +173,16 @@ one RTX 5090 for the GPU backends, 16 CPU threads for MuJoCo):
 | Backend | Success | Safety | Wall time |
 | --- | :---: | :---: | :---: |
 | CPU MuJoCo | 98.9% | 0.8% | 58 min |
-| MuJoCo Warp | 95.6% | 1.9% | 4.2 min |
-| Metamorphysics | 96.3% | 1.5% | 1.4 min |
+| MuJoCo Warp | 95.5% | 1.7% | 4.2 min |
+| Metamorphysics | 96.6% | 1.4% | 1.5 min |
+| Metamorphysics, `"sdfdcd"` | 96.2% | 1.3% | 1.9 min |
 
 | Task | R4 | R8 | R12 | R16 | P4 | P8 | P12 | P16 | Gs | Gm | Gl | N4 | N8 | N12 | N16 | BNC | DSUB | RJ45 | USB | WP |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | CPU MuJoCo | 99 | 98 | 99 | 100 | 96 | 99 | 99 | 98 | 99 | 100 | 99 | 99 | 100 | 98 | 99 | 99 | 99 | 99 | 99 | 99 |
-| MuJoCo Warp | 98 | 99 | 100 | 100 | 96 | 98 | 99 | 98 | 99 | 100 | 99 | 99 | 99 | 98 | 38 | 100 | 98 | 99 | 97 | 98 |
-| Metamorphysics | 99 | 99 | 100 | 100 | 94 | 88 | 98 | 99 | 100 | 99 | 98 | 91 | 98 | 95 | 95 | 100 | 99 | 94 | 88 | 92 |
+| MuJoCo Warp | 98 | 100 | 100 | 100 | 98 | 99 | 99 | 98 | 98 | 99 | 99 | 98 | 100 | 99 | 35 | 100 | 98 | 98 | 98 | 98 |
+| Metamorphysics | 98 | 99 | 100 | 100 | 94 | 88 | 98 | 99 | 100 | 99 | 99 | 91 | 98 | 96 | 96 | 100 | 99 | 92 | 89 | 96 |
+| Metamorphysics, `"sdfdcd"` | 98 | 99 | 100 | 100 | 94 | 88 | 98 | 99 | 100 | 99 | 99 | 96 | 99 | 98 | 98 | 100 | 99 | 92 | 71 | 96 |
 
 MuJoCo Warp matches the CPU on every task but N16 (the M16 nut), not resolved yet. For Metamorphysics: its contact
 stiffness is limited by the sub-step (0.125 / sub-step), so a control step is 4 collision detections of 16 sub-steps

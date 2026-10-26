@@ -55,7 +55,7 @@ class MMPConfig:
     # how the SDF geoms of nuts and connectors collide: "mjwarp" (MuJoCo Warp's collision of the CPU models' SDFs,
     # mmp_sdf.py), "mjfit" (convex pieces, convex.py) or "sdfdcd" (MMP's SdfCollider)
     geometry: str = "mjwarp"
-    sdfdcd: dict = field(default_factory=dict)   # SdfDcdContacts' settings (scale, seeds, iterations, margin)
+    sdfdcd: dict = field(default_factory=dict)   # SdfDcdContacts' keyword arguments (mmp_sdf.py)
     arm_damping: float = 1.0          # MuJoCo's passive joint damping (Menagerie: 1, fingers: PhysicsConfig)
     # the fingers' coupling (MuJoCo's finger joint equality): spring and damper between the two finger joints
     finger_coupling: tuple = (5e4, 100.0)

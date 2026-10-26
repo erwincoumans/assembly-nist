@@ -199,65 +199,97 @@ class SdfContacts:
         return out
 
 
+# SdfDcdContacts' collider settings by family, and by task where one differs (pretrained policy, 64 to 160 episodes
+# per task): the threads are exact distance fields, whose overlaps are the sums of their depths, and a few contacts
+# hold them (more jam the nuts: N16 98% with 2, 88% with 4, 17% with 32); the connectors' grids of thin walls are not
+# distances away from their surfaces, so an overlap is twice its shallower depth, and the plugs need many contacts
+# around their shells (USB 9% with 4, 40% with 8, 71% with 32; MuJoCo Warp's contacts 82%) - but BNC's round
+# bayonet fewer (99% with 8, 92% with 32)
+FAMILY_SETTINGS = {
+    "nut": dict(seeds=8, contacts=2, shallow_overlap=False),
+    "connector": dict(seeds=32, contacts=32, shallow_overlap=True),
+}
+TASK_SETTINGS = {"BNC": dict(seeds=16, contacts=8)}
+
+
 class SdfDcdContacts:
     """The same contacts from Metamorphysics' own SDF collider (sdf_dcd: Giles and Andrews' search with a temporal
-    cache of four points per pair), with the plugin's SDFs: the thread SDFs as its bolt and nut shapes, the
-    connectors' grids as its grids. Its settings are the sdf_dcd demo's (for 1 m bodies) scaled by `scale`."""
+    cache of points per pair), with the plugin's SDFs: the thread SDFs as its bolt and nut shapes, the connectors'
+    grids as its grids, a collider per setting: FAMILY_SETTINGS and TASK_SETTINGS (`nut`, `connector`: dicts that
+    override a family's, `tasks`: {task: dict}). The other settings are the sdf_dcd demo's (for 1 m bodies) scaled
+    by `scale`."""
 
-    def __init__(self, mmp, world, tasks, device, stream_ptr, scale=0.002, seeds=8, iterations=50, margin=5e-4):
+    def __init__(self, mmp, world, tasks, device, stream_ptr, scale=0.002, iterations=50, margin=5e-4, nut=None,
+                 connector=None, tasks_settings=None):
         """tasks: [(task name, env ids, part MMP bodies, fixture MMP bodies, part ipos, part iquat (wxyz))]."""
         from ..tasks import TASKS
         from ..threads import SDF_GRID_DIR, THREADS, thread_attributes
         from ..scene import CONNECTOR_GRIDS
         self.world, self.stream_ptr = world, stream_ptr
         self.dev = torch.device(device)
-        n = sum(len(t[1]) for t in tasks)
-        c = self.collider = mmp.SdfCollider(max_bodies=world.num_bodies, max_pairs=max(n, 1),
-                                            device=self.dev.index or 0)
-        c.configure(iterations=iterations, seeds=seeds, margin=margin, contact_offset=0.0, tolerance=0.01 * scale,
-                    epsilon=0.1 * scale ** 2, alpha=0.01, cache_replacement_threshold=0.01 * scale)
-        grids = {}
+        overrides = dict(nut=nut or {}, connector=connector or {})
+        per_task = {**TASK_SETTINGS, **(tasks_settings or {})}
+        groups = {}                     # settings -> tasks
+        for t in tasks:
+            fam = "nut" if TASKS[t[0]].family == "nut" else "connector"
+            settings = {**FAMILY_SETTINGS[fam], **per_task.get(t[0], {}), **overrides[fam]}
+            groups.setdefault((fam, tuple(sorted(settings.items()))), []).append(t)
+        self.colliders = []             # (collider, pairs)
+        self.body_shape = {}            # (the collider and its shape of each body, for evaluating its field)
+        for (fam, settings), group in groups.items():
+            settings = dict(settings)
+            n = sum(len(t[1]) for t in group)
+            c = mmp.SdfCollider(max_bodies=world.num_bodies, max_pairs=max(n, 1), device=self.dev.index or 0)
+            c.configure(iterations=iterations, margin=margin, contact_offset=0.0, tolerance=0.01 * scale,
+                        epsilon=0.1 * scale ** 2, alpha=0.01, cache_replacement_threshold=0.01 * scale, **settings)
+            grids = {}
 
-        def grid(gid):
-            if gid not in grids:
-                raw = (SDF_GRID_DIR / f"grid_{gid}.bin").read_bytes()
-                dims = np.frombuffer(raw, np.int32, 3, 0)
-                o = np.frombuffer(raw, np.float64, 4, 12)
-                v = np.frombuffer(raw, np.float16, int(np.prod(dims)), 44).astype(np.float32)
-                v = np.ascontiguousarray(v.reshape(dims[2], dims[1], dims[0]).transpose(2, 1, 0))
-                grids[gid] = c.register_grid(v, o[:3].tolist(), [float(o[3])] * 3)
-            return grids[gid]
+            def grid(gid):
+                if gid not in grids:
+                    raw = (SDF_GRID_DIR / f"grid_{gid}.bin").read_bytes()
+                    dims = np.frombuffer(raw, np.int32, 3, 0)
+                    o = np.frombuffer(raw, np.float64, 4, 12)
+                    v = np.frombuffer(raw, np.float16, int(np.prod(dims)), 44).astype(np.float32)
+                    v = np.ascontiguousarray(v.reshape(dims[2], dims[1], dims[0]).transpose(2, 1, 0))
+                    grids[gid] = c.register_grid(v, o[:3].tolist(), [float(o[3])] * 3)
+                return grids[gid]
 
-        pairs = []
-        for name, ids, parts, fixtures, ipos, iquat in tasks:
-            fam = TASKS[name].family
-            if fam == "nut":
-                b, nut = thread_attributes(name)
-                b, nut = list(b.values()), list(nut.values())
-                R = nut[5] * 1.1547005383792515 + 0.0005
-                part = c.register_shape("nut", nut, [-R, -R, nut[6] - 5e-4, R, R, nut[7] + 5e-4])
-                R = b[3] + 0.0003
-                fixture = c.register_shape("bolt", b, [-R, -R, b[4] - 3e-4, R, R, b[5] + 3e-4])
-            else:
-                pid, sid = CONNECTOR_GRIDS[name]
-                part, fixture = grid(pid), grid(sid)
-            # the part's SDF in its body's frame (the centre of mass and principal axes)
-            Ri = np.empty(9); mujoco.mju_quat2Mat(Ri, np.asarray(iquat, float)); Ri = Ri.reshape(3, 3)
-            conj = np.array([-iquat[1], -iquat[2], -iquat[3], iquat[0]])          # xyzw of the inverse
-            part = c.register_compound([(part, tuple(float(x) for x in Ri.T @ -np.asarray(ipos)), tuple(float(x) for x in conj))])
-            for pb, fb in zip(parts, fixtures):
-                c.set_body_shape(int(pb), part)
-                c.set_body_shape(int(fb), fixture)
-                pairs.append((int(pb), int(fb), 0, 0))
-        self.pairs = torch.as_tensor(np.asarray(pairs, np.int32), device=self.dev)
+            pairs = []
+            for name, ids, parts, fixtures, ipos, iquat in group:
+                if fam == "nut":
+                    b, nut_ = thread_attributes(name)
+                    b, nut_ = list(b.values()), list(nut_.values())
+                    R = nut_[5] * 1.1547005383792515 + 0.0005
+                    part = c.register_shape("nut", nut_, [-R, -R, nut_[6] - 5e-4, R, R, nut_[7] + 5e-4])
+                    R = b[3] + 0.0003
+                    fixture = c.register_shape("bolt", b, [-R, -R, b[4] - 3e-4, R, R, b[5] + 3e-4])
+                else:
+                    pid, sid = CONNECTOR_GRIDS[name]
+                    part, fixture = grid(pid), grid(sid)
+                # the part's SDF in its body's frame (the centre of mass and principal axes)
+                Ri = np.empty(9); mujoco.mju_quat2Mat(Ri, np.asarray(iquat, float)); Ri = Ri.reshape(3, 3)
+                conj = np.array([-iquat[1], -iquat[2], -iquat[3], iquat[0]])          # xyzw of the inverse
+                part = c.register_compound([(part, tuple(float(x) for x in Ri.T @ -np.asarray(ipos)),
+                                             tuple(float(x) for x in conj))])
+                for pb, fb in zip(parts, fixtures):
+                    c.set_body_shape(int(pb), part)
+                    c.set_body_shape(int(fb), fixture)
+                    self.body_shape[int(pb)], self.body_shape[int(fb)] = (c, part), (c, fixture)
+                    pairs.append((int(pb), int(fb), 0, 0))
+            self.colliders.append((c, torch.as_tensor(np.asarray(pairs, np.int32), device=self.dev)))
         self.aabbs = torch.zeros(world.num_bodies, 8, device=self.dev)
         self.records = None
 
     def compute(self, part_qpos=None):
-        w, c = self.world, self.collider
-        c.update_aabbs(w.num_bodies, w.bodies_ptr, self.aabbs.data_ptr(), self.stream_ptr)
-        n = c.compute_pairs(len(self.pairs), self.pairs.data_ptr(), w.bodies_ptr, self.aabbs.data_ptr(), self.stream_ptr)
-        if n:
-            self.records = wp.to_torch(wp.array(ptr=c.contacts_ptr, dtype=wp.float32, shape=(n, CONTACT_WORDS),
-                                                device=wp.get_device(str(self.dev)), copy=False))
-        return n
+        """The colliders' contacts into records (in the world's stream); returns their count."""
+        w = self.world
+        out = []
+        for c, pairs in self.colliders:
+            c.update_aabbs(w.num_bodies, w.bodies_ptr, self.aabbs.data_ptr(), self.stream_ptr)
+            n = c.compute_pairs(len(pairs), pairs.data_ptr(), w.bodies_ptr, self.aabbs.data_ptr(), self.stream_ptr)
+            if n:
+                out.append(wp.to_torch(wp.array(ptr=c.contacts_ptr, dtype=wp.float32, shape=(n, CONTACT_WORDS),
+                                                device=wp.get_device(str(self.dev)), copy=False)))
+        if out:
+            self.records = out[0] if len(out) == 1 else torch.cat(out)
+        return sum(len(r) for r in out)
