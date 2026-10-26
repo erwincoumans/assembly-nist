@@ -3,10 +3,11 @@
   mujoco   CPU MuJoCo (sim/env.py), the reference
   mjwarp   MuJoCo Warp: the same task models on the GPU (mjwarp_env.py)
   mmp      Metamorphysics (mmp_env.py)
+  wm       a learned world model (wm/backend.py)
 """
 from __future__ import annotations
 
-BACKENDS = ("mujoco", "mjwarp", "mmp")
+BACKENDS = ("mujoco", "mjwarp", "mmp", "wm")
 
 
 def make_env(backend, task_names, task_of_env, ecfg, **kw):
@@ -20,4 +21,7 @@ def make_env(backend, task_names, task_of_env, ecfg, **kw):
     if backend == "mmp":
         from .mmp_env import make_mmp_env
         return make_mmp_env(task_names, task_of_env, ecfg, **kw)
+    if backend == "wm":
+        from ...wm.backend import make_wm_env
+        return make_wm_env(task_names, task_of_env, ecfg, **kw)
     raise ValueError(f"unknown backend {backend!r}; choose from {BACKENDS}")

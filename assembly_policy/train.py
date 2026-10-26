@@ -76,7 +76,7 @@ def parse(argv=None):
     ap.add_argument("--n-fix", type=int, default=128)
     ap.add_argument("--n-grip", type=int, default=64)
     # infrastructure
-    ap.add_argument("--backend", default="mujoco", choices=("mujoco", "mjwarp", "mmp"),
+    ap.add_argument("--backend", default="mujoco", choices=("mujoco", "mjwarp", "mmp", "wm"),
                     help="simulator: CPU MuJoCo (local threads or remote workers) or a GPU backend (sim/gpu)")
     ap.add_argument("--backend-kw", default="{}", help="JSON options of the GPU backend")
     ap.add_argument("--eval-backend", default=None, help="the background evaluations' simulator (default: --backend)")
