@@ -175,14 +175,14 @@ one RTX 5090 for the GPU backends, 16 CPU threads for MuJoCo):
 | CPU MuJoCo | 98.9% | 0.8% | 58 min |
 | MuJoCo Warp | 95.5% | 1.7% | 4.2 min |
 | Metamorphysics | 96.6% | 1.4% | 1.5 min |
-| Metamorphysics, `"sdfdcd"` | 96.2% | 1.3% | 1.9 min |
+| Metamorphysics, `"sdfdcd"` | 96.0% | 1.3% | 1.4 min |
 
 | Task | R4 | R8 | R12 | R16 | P4 | P8 | P12 | P16 | Gs | Gm | Gl | N4 | N8 | N12 | N16 | BNC | DSUB | RJ45 | USB | WP |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | CPU MuJoCo | 99 | 98 | 99 | 100 | 96 | 99 | 99 | 98 | 99 | 100 | 99 | 99 | 100 | 98 | 99 | 99 | 99 | 99 | 99 | 99 |
 | MuJoCo Warp | 98 | 100 | 100 | 100 | 98 | 99 | 99 | 98 | 98 | 99 | 99 | 98 | 100 | 99 | 35 | 100 | 98 | 98 | 98 | 98 |
 | Metamorphysics | 98 | 99 | 100 | 100 | 94 | 88 | 98 | 99 | 100 | 99 | 99 | 91 | 98 | 96 | 96 | 100 | 99 | 92 | 89 | 96 |
-| Metamorphysics, `"sdfdcd"` | 98 | 99 | 100 | 100 | 94 | 88 | 98 | 99 | 100 | 99 | 99 | 96 | 99 | 98 | 98 | 100 | 99 | 92 | 71 | 96 |
+| Metamorphysics, `"sdfdcd"` | 98 | 99 | 100 | 100 | 94 | 88 | 98 | 99 | 100 | 99 | 99 | 95 | 100 | 96 | 98 | 100 | 98 | 91 | 71 | 97 |
 
 MuJoCo Warp matches the CPU on every task but N16 (the M16 nut), not resolved yet. For Metamorphysics: its contact
 stiffness is limited by the sub-step (0.125 / sub-step), so a control step is 4 collision detections of 16 sub-steps
