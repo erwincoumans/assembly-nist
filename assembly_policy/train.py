@@ -359,8 +359,10 @@ class Trainer:
                        fam_success={f: (st["fam_s"][i] / st["fam_n"][i] if st["fam_n"][i] else None) for i, f in enumerate(FAMILIES)},
                        task_success={t: (st["task_s"][i] / st["task_n"][i] if st["task_n"][i] else None) for i, t in enumerate(self.tasks)},
                        visited=float((self.sampler.cnt > 0).mean()), **losses)
-            if torch.cuda.is_available():     # (per device: torch's reserved memory and the device's used memory, GB)
+            if torch.cuda.is_available():     # (per device, GB: torch's reserved memory, Warp's memory pool's used
+                import warp as wp               # memory, the device's used memory)
                 rec["gpu_mem"] = [(round(torch.cuda.memory_reserved(d) / 2**30, 2),
+                                   round(wp.get_mempool_used_mem_current(f"cuda:{d}") / 2**30, 2),
                                    round((lambda f: (f[1] - f[0]) / 2**30)(torch.cuda.mem_get_info(d)), 2))
                                   for d in range(torch.cuda.device_count())]
             log_f.write(json.dumps(rec) + "\n"); log_f.flush()
