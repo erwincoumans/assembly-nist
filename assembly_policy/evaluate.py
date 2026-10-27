@@ -21,7 +21,7 @@ from .rl.nets import ActorCritic
 from .rl.obs import PointTables
 from .sim.resets import FAMILIES
 from .sim.env import EnvConfig, parse_scales
-from .sim.gpu import BACKENDS, make_env
+from .sim.gpu import BACKENDS, gpu_devices, make_env
 from .sim.tasks import BANK_DIR, resolve_tasks
 
 
@@ -120,7 +120,7 @@ def main():
     ap.add_argument("--nthread", type=int, default=int(os.environ.get("SLURM_CPUS_PER_TASK", 8)))
     ap.add_argument("--device", default=None, help="policy device (default: cpu for mujoco, else cuda)")
     ap.add_argument("--backend", default="mujoco", choices=BACKENDS, help="simulator (GPU backends: sim/gpu)")
-    ap.add_argument("--sim-device", default="cuda:0", help="GPU of the simulation (GPU backends)")
+    ap.add_argument("--gpus", default="0", help="the GPU of a GPU backend (one: 0, 1, ...)")
     ap.add_argument("--backend-kw", default="{}", help='JSON options of the GPU backend, e.g. \'{"geometry": "mjfit"}\'')
     ap.add_argument("--seeds", type=int, default=5, help="evaluation seeds (paper: 5)")
     ap.add_argument("--trials", type=int, default=32, help="trials per task and seed (paper: 32)")
@@ -128,10 +128,14 @@ def main():
     ap.add_argument("--deterministic", action="store_true", help="mean actions (default: sampled, as in the paper)")
     a = ap.parse_args()
     tasks = resolve_tasks(a.tasks)
-    device = a.device or ("cpu" if a.backend == "mujoco" else a.sim_device)
+    sim_device = gpu_devices(a.gpus)
+    if len(sim_device) != 1:
+        ap.error("--gpus: an evaluation simulates on one GPU")
+    sim_device = sim_device[0]
+    device = a.device or ("cpu" if a.backend == "mujoco" else sim_device)
     pol = TorchPolicy(a.policy, tasks, device, deterministic=a.deterministic)
     cfg = env_config(pol.args, a.nthread)
-    kw = {} if a.backend == "mujoco" else dict(device=a.sim_device, **json.loads(a.backend_kw))
+    kw = {} if a.backend == "mujoco" else dict(device=sim_device, **json.loads(a.backend_kw))
     t0 = time.time()
     res = evaluate(pol, tasks, a.bank_dir, cfg, seeds=tuple(range(a.seeds)), trials=a.trials, backend=a.backend, backend_kw=kw)
     res["meta"] = dict(policy=str(a.policy), tasks=tasks, bank_dir=str(a.bank_dir), deterministic=a.deterministic,

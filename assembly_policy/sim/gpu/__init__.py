@@ -10,6 +10,15 @@ from __future__ import annotations
 BACKENDS = ("mujoco", "mjwarp", "mmp", "wm")
 
 
+def gpu_devices(gpus):
+    """The CUDA devices of a --gpus option, as Metamorphysics' examples take it: indices ("0", "1", "0,1") of the
+    visible devices (CUDA_VISIBLE_DEVICES), or "all"."""
+    if gpus == "all":
+        import torch
+        return [f"cuda:{i}" for i in range(torch.cuda.device_count())]
+    return [f"cuda:{int(i)}" for i in gpus.split(",")]
+
+
 def make_env(backend, task_names, task_of_env, ecfg, **kw):
     """An environment of the backend for these tasks (the task index of each environment)."""
     if backend == "mujoco":

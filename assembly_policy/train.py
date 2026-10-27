@@ -31,6 +31,7 @@ from .rl.obs import PointTables
 from .sim.resets import FAMILIES
 from .rl.sampler import ResetSampler
 from .sim.env import HISTORY, PROPRIO_DIM, EnvConfig, parse_scales
+from .sim.gpu import gpu_devices
 from .sim.tasks import BANK_DIR, FINE_STEP_COST, ROOT, STEP_COST, TASKS, resolve_tasks
 from .rl.vecenv import LocalVecEnv
 
@@ -81,15 +82,16 @@ def parse(argv=None):
     ap.add_argument("--backend-kw", default="{}", help="JSON options of the GPU backend")
     ap.add_argument("--eval-backend", default=None, help="the background evaluations' simulator (default: --backend)")
     ap.add_argument("--eval-backend-kw", default=None, help="its JSON options (default: --backend-kw)")
-    ap.add_argument("--sim-device", default="cuda:0",
-                    help="GPU(s) of a GPU backend's simulation: a comma-separated list splits the environments")
+    ap.add_argument("--gpus", default="0",
+                    help='GPUs of a GPU backend: "0", "1", "0,1" or "all" (several split the environments)')
     ap.add_argument("--remote-workers", type=int, default=0, help="number of remote worker processes (0 = simulate here)")
     ap.add_argument("--nthread", type=int, default=int(os.environ.get("SLURM_CPUS_PER_TASK", 8)),
                     help="simulation threads when simulating locally")
     ap.add_argument("--accept-timeout", type=float, default=300.0, help="start with partial remote workers after this (s)")
     ap.add_argument("--min-conn-frac", type=float, default=0.5)
     ap.add_argument("--micro-batch", type=int, default=65536, help="samples per forward/backward chunk (GPU memory)")
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=None,
+                    help="learner device (default: a GPU backend's first of --gpus, else cuda if available)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--save-every", type=int, default=50)
     ap.add_argument("--keep-every", type=int, default=500, help="also keep model_<it>.pt every this many iterations")
@@ -117,7 +119,8 @@ def load_banks(tasks, bank_dir, per_family=0):
 class Trainer:
     def __init__(self, a):
         self.a = a
-        self.dev = torch.device(a.device)
+        self.dev = torch.device(a.device or (gpu_devices(a.gpus)[0] if a.backend != "mujoco" else
+                                             "cuda" if torch.cuda.is_available() else "cpu"))
         if self.dev.type == "cuda" and self.dev.index is None:      # (not whichever device a simulator makes current)
             self.dev = torch.device("cuda", torch.cuda.current_device())
         self.tasks = resolve_tasks(a.tasks)
@@ -140,7 +143,7 @@ class Trainer:
         t0 = np.random.default_rng(a.seed + 7).integers(0, horizon, a.envs)   # desynchronized episode clocks
         if a.backend != "mujoco":
             from .rl.vecenv import GpuVecEnv, MultiGpuVecEnv, split_tasks
-            devices = a.sim_device.split(",")
+            devices = gpu_devices(a.gpus)
             tasks = split_tasks(a.envs, len(self.tasks))
             if len(devices) > 1:
                 self.env = MultiGpuVecEnv(a.backend, self.tasks, tasks, self.ecfg, self._provider, t0, devices=devices,
@@ -199,7 +202,7 @@ class Trainer:
              "--bank-dir", str(self.a.bank_dir), "--out", str(out), "--nthread", str(self.a.eval_threads),
              "--backend", self.a.eval_backend or self.a.backend,
              "--backend-kw", self.a.eval_backend_kw or (self.a.backend_kw if not self.a.eval_backend else "{}"),
-             "--sim-device", self.a.sim_device.split(",")[0]],
+             "--gpus", self.a.gpus.split(",")[0] if self.a.gpus != "all" else "0"],
             stdout=log, stderr=subprocess.STDOUT, cwd=str(ROOT), env={**os.environ, "OMP_NUM_THREADS": "2"}))
 
     def _maybe_resume(self):
